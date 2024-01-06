@@ -1,0 +1,167 @@
+{% extends "master.html" %}
+
+{% load humanize %}
+
+{% block title %}
+  Contract Admin
+{% endblock %}
+
+
+{% block content %}
+<h1>Contract Admin Home Page</h1>
+<p>65 Spitfire Place</p>
+
+<form method="post" action="{% url 'upload_csv' %}" enctype="multipart/form-data">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit">Upload CSV</button>
+</form>
+
+<!-- Table to display Costing data -->
+<div style="overflow-x:auto;">
+  <table style="width:100%; border-collapse: collapse;">
+    <thead>
+      <tr style="background-image: linear-gradient(45deg, #A090D0 0%, #B3E1DD 100%);">
+        <th>Category</th>
+        <th>Item</th>
+        <th>Contract Budget</th>
+        <th>Forecast Budget</th>
+        <th>Uncommitted</th>
+        <th>Committed</th>
+        <th>Complete On Site</th>
+        <th>HC Next Claim</th>
+        <th>HC Received</th>
+        <th>SC Invoiced</th>
+        <th>SC Paid</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for costing in costings %}
+      <tr>
+        <td>{{ costing.category }}</td>
+        <td>{{ costing.item }}</td>
+        <td>{% if costing.contract_budget|floatformat:2 == "0.00" %}-{% else %}{{ costing.contract_budget|floatformat:2|intcomma }}{% endif %}</td>
+            <!-- Forecast Budget calculation -->
+        <td>{% with total=costing.committed|add:costing.uncommitted %}
+          {% if total|floatformat:2 == "0.00" %}-{% else %}{{ total|floatformat:2|intcomma }}{% endif %}
+        {% endwith %}</td>
+        <td><a href="#" data-toggle="modal" data-target="#editModal{{ costing.id }}" data-id="{{ costing.id }}">{{ costing.uncommitted|floatformat:2|intcomma }}</a></td>
+        <td><a href="#" data-toggle="modal" data-target="#editModal{{ costing.id }}" data-id="{{ costing.id }}">{{ costing.committed|floatformat:2|intcomma }}</a></td>
+        <td>{% if costing.complete_on_site|floatformat:2 == "0.00" %}-{% else %}{{ costing.complete_on_site|floatformat:2|intcomma }}{% endif %}</td>
+        <td>{% if costing.hc_next_claim|floatformat:2 == "0.00" %}-{% else %}{{ costing.hc_next_claim|floatformat:2|intcomma }}{% endif %}</td>
+        <td>{% if costing.hc_received|floatformat:2 == "0.00" %}-{% else %}{{ costing.hc_received|floatformat:2|intcomma }}{% endif %}</td>
+        <td>{% if costing.sc_invoiced|floatformat:2 == "0.00" %}-{% else %}{{ costing.sc_invoiced|floatformat:2|intcomma }}{% endif %}</td>
+        <td>{% if costing.sc_paid|floatformat:2 == "0.00" %}-{% else %}{{ costing.sc_paid|floatformat:2|intcomma }}{% endif %}</td>
+        <td>{{ costing.notes }}</td>
+      </tr>
+      {% endfor %}
+      <!-- Total row -->
+      <tr style="font-weight: bold;"> <!-- Make text bold -->
+        <th>Total</th>
+        <td>-</td> <!-- Placeholder for non-sum columns -->
+        <td>{% if totals.total_contract_budget == 0 %}-{% else %}{{ totals.total_contract_budget|floatformat:2|intcomma }}{% endif %}</td>
+        <td>{% if totals.total_forecast_budget == 0 %}-{% else %}{{ totals.total_forecast_budget|floatformat:2|intcomma }}{% endif %}</td>
+        <td>{% if totals.total_uncommitted == 0 %}-{% else %}{{ totals.total_uncommitted|floatformat:2|intcomma }}{% endif %}</td>
+        <td>{% if totals.total_committed == 0 %}-{% else %}{{ totals.total_committed|floatformat:2|intcomma }}{% endif %}</td>
+        <td>{% if totals.total_complete_on_site == 0 %}-{% else %}{{ totals.total_complete_on_site|floatformat:2|intcomma }}{% endif %}</td>
+        <td>{% if totals.total_hc_next_claim == 0 %}-{% else %}{{ totals.total_hc_next_claim|floatformat:2|intcomma }}{% endif %}</td>
+        <td>{% if totals.total_hc_received == 0 %}-{% else %}{{ totals.total_hc_received|floatformat:2|intcomma }}{% endif %}</td>
+        <td>{% if totals.total_sc_invoiced == 0 %}-{% else %}{{ totals.total_sc_invoiced|floatformat:2|intcomma }}{% endif %}</td>
+        <td>{% if totals.total_sc_paid == 0 %}-{% else %}{{ totals.total_sc_paid|floatformat:2|intcomma }}{% endif %}</td>
+        <td>-</td> <!-- Placeholder for non-sum columns -->
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+{% for costing in costings %}
+<!-- Modal -->
+<div class="modal fade" id="editModal{{ costing.id }}" tabindex="-1" role="dialog" aria-labelledby="editModalLabel{{ costing.id }}" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="editModalLabel{{ costing.id }}">Edit Costs</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <table>
+          <!-- Existing costs -->
+          <tr>
+            <th></th>
+            <th>Uncommitted</th>
+            <th>Committed</th>
+            <th>Total</th>
+          </tr>
+          <tr>
+            <td>Original</td>
+            <td>{{ costing.uncommitted|floatformat:2|intcomma }}</td>
+            <td>{{ costing.committed|floatformat:2|intcomma }}</td>
+            <td>{{ costing.committed|add:costing.uncommitted|floatformat:2|intcomma }}</td>
+          </tr>
+          <!-- Editable costs -->
+          <tr>
+            <td>Edited</td>
+            <td><input type="number" class="form-control committed-input" id="uncommittedInput{{ costing.id }}" value="{{ costing.uncommitted }}"></td>
+            <td><input type="number" class="form-control committed-input" id="committedInput{{ costing.id }}" value="{{ costing.committed }}"></td>
+            <td id="total{{ costing.id }}">{{ costing.committed|add:costing.uncommitted|floatformat:2|intcomma }}</td>
+          </tr>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary save-costs" data-id="{{ costing.id }}">Save</button>
+    </div>    
+    </div>
+  </div>
+</div>
+
+{% endfor %}
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    {% for costing in costings %}
+    (function() {
+      var committedInput = document.getElementById('committedInput{{ costing.id }}');
+      var uncommittedInput = document.getElementById('uncommittedInput{{ costing.id }}');
+      var totalDisplay = document.getElementById('total{{ costing.id }}');
+
+      function updateTotal() {
+        var committedValue = parseFloat(committedInput.value) || 0;
+        var uncommittedValue = parseFloat(uncommittedInput.value) || 0;
+        totalDisplay.textContent = (committedValue + uncommittedValue).toFixed(2);
+      }
+
+      committedInput.addEventListener('input', updateTotal);
+      uncommittedInput.addEventListener('input', updateTotal);
+    })();
+    {% endfor %}
+  });
+
+  document.addEventListener('DOMContentLoaded', function() {
+  {% for costing in costings %}
+  (function() {
+    var committedInput = document.getElementById('committedInput{{ costing.id }}');
+    var uncommittedInput = document.getElementById('uncommittedInput{{ costing.id }}');
+    var totalDisplay = document.getElementById('total{{ costing.id }}');
+
+    function updateTotal() {
+      var committedValue = parseFloat(committedInput.value) || 0;
+      var uncommittedValue = parseFloat(uncommittedInput.value) || 0;
+      var total = committedValue + uncommittedValue;
+      totalDisplay.textContent = total.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,'); // Add comma separator
+    }
+
+    committedInput.addEventListener('input', updateTotal);
+    uncommittedInput.addEventListener('input', updateTotal);
+  })();
+  {% endfor %}
+});
+
+</script>
+
+
+{% endblock %}
+
