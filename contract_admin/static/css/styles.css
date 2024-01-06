@@ -44,3 +44,34 @@ table {
 .navbar .nav-link {
     padding: 5px 10px; /* Minimal standard padding */
 }
+
+.navbar a:hover {
+  color: #f1f1f1;
+}
+
+        /* Add some basic styling to the navbar */
+        .navbar {
+          height: 100%;
+          width: 160px; /* Width of the navbar */
+          position: fixed;
+          z-index: 1;
+          top: 0;
+          left: 0;
+          background-color: #111; /* Navbar background color */
+          overflow-x: hidden;
+          padding-top: 20px;
+      }
+
+      .navbar a {
+          padding: 10px 15px;
+          text-decoration: none;
+          font-size: 18px;
+          color: white;
+          display: block;
+      }
+
+      /* Content styling */
+      .main-content {
+          margin-left: 160px; /* Same as navbar width */
+          padding: 20px;
+      }
