@@ -11,6 +11,10 @@
 <h1>Contract Admin Home Page</h1>
 <p>65 Spitfire Place</p>
 
+<!-- Add this inside your HTML where you want the button -->
+<button id="commitCostsBtn">Commit Costs</button>
+<input type="file" id="pdfInput" accept="application/pdf" style="display: none;" />
+
 <form method="post" action="{% url 'upload_csv' %}" enctype="multipart/form-data">
   {% csrf_token %}
   {{ form.as_p }}
@@ -119,49 +123,146 @@
 </div>
 
 {% endfor %}
+{{ items|json_script:"items-data" }}
 
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    {% for costing in costings %}
-    (function() {
-      var committedInput = document.getElementById('committedInput{{ costing.id }}');
-      var uncommittedInput = document.getElementById('uncommittedInput{{ costing.id }}');
-      var totalDisplay = document.getElementById('total{{ costing.id }}');
+  var itemsData = JSON.parse(document.getElementById('items-data').textContent);
 
-      function updateTotal() {
-        var committedValue = parseFloat(committedInput.value) || 0;
-        var uncommittedValue = parseFloat(uncommittedInput.value) || 0;
-        totalDisplay.textContent = (committedValue + uncommittedValue).toFixed(2);
-      }
+document.addEventListener('DOMContentLoaded', function() {
+    // Handler for 'Commit Costs' button to open the PDF input
+    document.getElementById('commitCostsBtn').addEventListener('click', function() {
+        document.getElementById('pdfInput').click();
+    });
 
-      committedInput.addEventListener('input', updateTotal);
-      uncommittedInput.addEventListener('input', updateTotal);
-    })();
-    {% endfor %}
-  });
+    // Handler for file input change event
+    document.getElementById('pdfInput').addEventListener('change', function(event) {
+        var file = event.target.files[0];
+        if (file) {
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                var pdfData = e.target.result;
+                displayCombinedModal(pdfData);
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+});
 
-  document.addEventListener('DOMContentLoaded', function() {
-  {% for costing in costings %}
-  (function() {
-    var committedInput = document.getElementById('committedInput{{ costing.id }}');
-    var uncommittedInput = document.getElementById('uncommittedInput{{ costing.id }}');
-    var totalDisplay = document.getElementById('total{{ costing.id }}');
+// Function to display the combined modal
+function displayCombinedModal(pdfData) {
+    var combinedModalHTML = `
+        <div id="combinedModal" style="position: fixed; top: 10%; left: 170px; width: calc(100% - 170px); height: 80%; background-color: white; padding: 20px; border: 1px solid #ddd; display: flex; box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);">
+            <div style="flex: 1; border-right: 1px solid #ddd; padding-right: 10px;">
+                <iframe src="${pdfData}" width="100%" height="100%" style="border: none;"></iframe>
+            </div>
+            <div style="flex: 1; padding-left: 10px; overflow-x: auto;">">
+                <h2>Commit Costs</h2>
+                <label for="totalCost">Total Cost:</label>
+                <input type="number" id="totalCost" step="0.01" placeholder="0.00" style="margin-bottom: 10px;">
+                <h3>Line Items</h3>
+                <table id="lineItemsTable">
+                    <thead>
+                        <tr>
+                            <th rowspan="2">Item</th>
+                            <th colspan="2">Uncommitted</th>
+                            <th colspan="2">Committed</th>
+                            <th colspan="2">Total</th>
+                        </tr>
+                        <tr>
+                            <th>Old</th>
+                            <th>New</th>
+                            <th>Old</th>
+                            <th>New</th>
+                            <th>Old</th>
+                            <th>New</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Rows will be added here -->
+                    </tbody>
+                </table>
+                <button id="addRowButton" onclick="addLineItem()">+</button>
+                <button id="closeBtn">Close</button>
+            </div>
+        </div>
+    `;
+    // Create a new div and set its innerHTML to the modal HTML
+    var modalDiv = document.createElement('div');
+    modalDiv.innerHTML = combinedModalHTML;
+    // Append the div to the body
+    document.body.appendChild(modalDiv);
+    // Set up 'close' button event listener
+    document.getElementById('closeBtn').addEventListener('click', function() {
+        var modal = document.getElementById('combinedModal');
+        modal.parentNode.removeChild(modal);
 
-    function updateTotal() {
-      var committedValue = parseFloat(committedInput.value) || 0;
-      var uncommittedValue = parseFloat(uncommittedInput.value) || 0;
-      var total = committedValue + uncommittedValue;
-      totalDisplay.textContent = total.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,'); // Add comma separator
+        // Reset the file input
+        document.getElementById('pdfInput').value = '';
+    });
+}
+
+// Function to add a new line item
+function addLineItem() {
+    var table = document.getElementById('lineItemsTable');
+    var row = table.insertRow(-1);
+    var cell1 = row.insertCell(0);
+    var cell2 = row.insertCell(1);
+    var cell3 = row.insertCell(2);
+    var cell4 = row.insertCell(3);
+    var cell5 = row.insertCell(4);
+    var cell6 = row.insertCell(5);
+    var cell7 = row.insertCell(6);
+
+    cell1.innerHTML = '<select id="itemSelect"></select>';
+    cell2.innerHTML = '<input type="number" step="0.01" placeholder="0.00">';
+    cell3.innerHTML = '<input type="number" step="0.01" placeholder="0.00">';
+    cell4.innerHTML = '<input type="number" step="0.01" placeholder="0.00">';
+    cell5.innerHTML = '<input type="number" step="0.01" placeholder="0.00">';
+    cell6.innerHTML = '<input type="number" step="0.01" placeholder="0.00">';
+    cell7.innerHTML = '<input type="number" step="0.01" placeholder="0.00">';
+
+    // Populate the select options
+    var select = document.getElementById('itemSelect');
+    for (var i = 0; i < itemsData.length; i++) {
+        var option = document.createElement('option');
+        option.value = itemsData[i].id;
+        option.text = itemsData[i].name;
+        select.appendChild(option);
     }
+}
 
-    committedInput.addEventListener('input', updateTotal);
-    uncommittedInput.addEventListener('input', updateTotal);
-  })();
-  {% endfor %}
+// Function to calculate the total cost
+function calculateTotalCost() {
+    var totalCostInput = document.getElementById('totalCost');
+    var table = document.getElementById('lineItemsTable');
+    var totalCost = 0;
+    for (var i = 1, row; row = table.rows[i]; i++) {
+        //iterate through rows
+        //rows would be accessed using the "row" variable assigned in the for loop
+        for (var j = 0, col; col = row.cells[j]; j++) {
+            //iterate through columns
+            //columns would be accessed using the "col" variable assigned in the for loop
+            if (j == 1 || j == 3 || j == 5 || j == 7 || j == 9 || j == 11 || j == 13) {
+                totalCost += parseFloat(col.children[0].value);
+            }
+        }  
+    }
+    totalCostInput.value = totalCost.toFixed(2);
+}
+
+// Add event listener to the 'add row' button
+document.getElementById('addRowButton').addEventListener('click', function() {
+    addLineItem();
+    calculateTotalCost();
+});
+
+// Add event listener to the 'total cost' input
+document.getElementById('totalCost').addEventListener('input', function() {
+    calculateTotalCost();
 });
 
 </script>
 
-
+  
 {% endblock %}
 

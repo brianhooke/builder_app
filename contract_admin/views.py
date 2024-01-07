@@ -6,11 +6,13 @@ from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.template import loader
 from django.db.models import Sum
-
+ 
 
 def contract_admin(request):
     form = CSVUploadForm()  # Instantiate your form
     costings = Costing.objects.all()  # Retrieve all Costing objects
+    # New: Retrieve a list of items for the dropdown
+    items = list(Costing.objects.values('item', 'uncommitted', 'committed').distinct())
     totals = {
         'total_contract_budget': Costing.objects.aggregate(Sum('contract_budget'))['contract_budget__sum'] or 0,
         'total_committed': Costing.objects.aggregate(Sum('committed'))['committed__sum'] or 0,
@@ -25,10 +27,10 @@ def contract_admin(request):
     context = {
         'form': form,
         'costings': costings,
+        'items': items,  # Add items to context
         'totals': totals,
     }
     return render(request, 'contract_admin.html', context)
-
 
 def upload_csv(request):
     if request.method == 'POST':
