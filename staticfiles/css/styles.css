@@ -91,6 +91,7 @@ div.overflow-x:auto {
 #lineItemsTable {
   border: 1px solid #ddd;
   margin-bottom: 10px;
+  table-layout: fixed;
 }
 
 #lineItemsTable th, #lineItemsTable td {
@@ -99,40 +100,112 @@ div.overflow-x:auto {
   text-align: left;
 }
 
-#lineItemsTable th:nth-child(1) {
-  width: 16%; /* Adjust as needed */
-}
-
-#lineItemsTable th:nth-child(2),
-#lineItemsTable th:nth-child(3) {
-  width: 14%; /* Adjust as needed */
-}
-
-#lineItemsTable th:nth-child(4),
-#lineItemsTable th:nth-child(5) {
-  width: 14%; /* Adjust as needed */
-}
-
-#lineItemsTable th:nth-child(6),
-#lineItemsTable th:nth-child(7) {
-  width: 14%; /* Adjust as needed */
-}
-
+#lineItemsTable th:nth-child(1),
 #lineItemsTable td:nth-child(1) {
-  width: 16%; /* Adjust as needed */
+    width: 16%;
 }
 
-#lineItemsTable td:nth-child(2),
-#lineItemsTable td:nth-child(3) {
-  width: 14%; /* Adjust as needed */
+#lineItemsTable th:nth-child(n+2),
+#lineItemsTable td:nth-child(n+2) {
+    width: 14%;
 }
 
-#lineItemsTable td:nth-child(4),
-#lineItemsTable td:nth-child(5) {
-  width: 14%; /* Adjust as needed */
+#leftSide {
+  width: 40%;
+  float: left;
 }
 
-#lineItemsTable td:nth-child(6),
-#lineItemsTable td:nth-child(7) {
-  width: 14%; /* Adjust as needed */
+#rightSide {
+  width: 60%;
+  float: right;
+}
+
+#lineItemsTable select {
+  width: 100%;
+}
+
+#lineItemsTable input {
+  max-width: 100%;
+}
+
+#combinedModal {
+  position: fixed;
+  top: 10%;
+  left: 170px;
+  width: calc(100% - 170px);
+  height: 80%;
+  background-color: white;
+  padding: 20px;
+  border: 1px solid #ddd;
+  display: flex;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.pdf-viewer {
+  flex: 0 0 50%;
+  border-right: 1px solid #ddd;
+  padding-right: 10px;
+}
+
+.pdf-frame {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.cost-details {
+  flex: 0 0 50%;
+  padding-left: 10px;
+  overflow-x: auto;
+}
+
+.total-cost-input {
+  margin-bottom: 10px;
+}
+
+/* Make the input fields wider */
+#lineItemsTable input {
+  width: 90%;  /* Adjust as needed */
+}
+
+/* Make the font smaller */
+#lineItemsTable input {
+  font-size: 0.8em;  /* Adjust as needed */
+}
+
+/* Add some padding to the cells */
+#lineItemsTable td {
+  padding: 0.5em;  /* Adjust as needed */
+}
+
+/* Remove the increment/decrement arrows from the total cost field */
+#totalCost {
+  -webkit-appearance: textfield;  /* for Chrome */
+  -moz-appearance: textfield;  /* for Firefox */
+  appearance: textfield;
+}
+
+/* Remove the increment/decrement arrows from the input fields in columns 3 and 5 */
+#lineItemsTable input[type="number"] {
+  -webkit-appearance: textfield;  /* for Chrome */
+  -moz-appearance: textfield;  /* for Firefox */
+  appearance: textfield;
+}
+
+/* For IE and Edge */
+#lineItemsTable input[type="number"]::-webkit-inner-spin-button,
+#lineItemsTable input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Set the font size for all cells in the table */
+#lineItemsTable td {
+  font-size: 0.8em;  /* Adjust as needed */
+}
+
+/* Set the font size and weight for the 'Still to Allocate' row */
+#stillToAllocateRow {
+  font-size: 1.2em;  /* Adjust as needed */
+  font-weight: bold;
 }
