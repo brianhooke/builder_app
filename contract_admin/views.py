@@ -10,19 +10,35 @@ from django.core.files.base import ContentFile
 import json
 import base64
 import uuid
- 
+from django.core import serializers
+from django.forms.models import model_to_dict
 
+ 
 def contract_admin(request):
     form = CSVUploadForm()  # Instantiate your form
     costings = Costing.objects.all()  # Retrieve all Costing objects
-    # New: Retrieve a list of items for the dropdown
-    items = list(Costing.objects.values('item', 'uncommitted', 'committed').distinct())
+    # Convert each 'costing' object to a dictionary and add 'committed'
+    costings = [model_to_dict(costing) for costing in costings]
+    for costing in costings:
+        category = Categories.objects.get(pk=costing['category'])
+        costing['category'] = category.category
+    committed_allocations = Committed_allocations.objects.all()
+    # Calculate the sums for each item
+    committed_allocations_sums = Committed_allocations.objects.values('item').annotate(total_amount=Sum('amount'))
+    # Convert the sums to a dictionary for easier access in the template
+    committed_allocations_sums_dict = {item['item']: item['total_amount'] for item in committed_allocations_sums}
+    # Append 'committed' to 'items'
+    for costing in costings:
+        costing['committed'] = committed_allocations_sums_dict.get(costing['item'], 0)    # New: Retrieve a list of items for the dropdown
+    items = [{'item': costing['item'], 'uncommitted': costing['uncommitted'], 'committed': costing['committed']} for costing in costings]
     # Retrieve all Committed_quotes and Committed_allocations objects
     committed_quotes = Committed_quotes.objects.all()
-    committed_allocations = Committed_allocations.objects.all()
+    committed_quotes_json = serializers.serialize('json', committed_quotes)
+    committed_allocations_json = serializers.serialize('json', committed_allocations)
+    total_committed = sum(costing['committed'] for costing in costings)
     totals = {
         'total_contract_budget': Costing.objects.aggregate(Sum('contract_budget'))['contract_budget__sum'] or 0,
-        'total_committed': Costing.objects.aggregate(Sum('committed'))['committed__sum'] or 0,
+        'total_committed': total_committed,
         'total_uncommitted': Costing.objects.aggregate(Sum('uncommitted'))['uncommitted__sum'] or 0,
         'total_complete_on_site': Costing.objects.aggregate(Sum('complete_on_site'))['complete_on_site__sum'] or 0,
         'total_hc_next_claim': Costing.objects.aggregate(Sum('hc_next_claim'))['hc_next_claim__sum'] or 0,
@@ -36,8 +52,8 @@ def contract_admin(request):
         'costings': costings,
         'items': items,  # Add items to context
         'totals': totals,
-        'committed_quotes': committed_quotes,  # Add committed_quotes to context
-        'committed_allocations': committed_allocations,  # Add committed_allocations to context
+        'committed_quotes': committed_quotes_json,
+        'committed_allocations': committed_allocations_json,  # Add committed_allocations to context
     }
     return render(request, 'contract_admin.html', context)
 
@@ -56,7 +72,6 @@ def upload_csv(request):
                     category=category,
                     item=row['item'],
                     contract_budget=row['contract_budget'],
-                    committed=row['committed'],
                     uncommitted=row['uncommitted'],
                     complete_on_site=row['complete_on_site'],
                     hc_next_claim=row['hc_next_claim'],
@@ -74,12 +89,10 @@ def upload_csv(request):
 def update_costs(request):
     if request.method == 'POST':
         costing_id = request.POST.get('id')
-        committed = request.POST.get('committed')
         uncommitted = request.POST.get('uncommitted')
         # Make sure you're handling type conversion and validation properly here
         try:
             costing = Costing.objects.get(id=costing_id)
-            costing.committed = committed
             costing.uncommitted = uncommitted
             costing.save()
             return JsonResponse({'status': 'success'})
@@ -99,15 +112,29 @@ def commit_data(request):
         data = json.loads(request.body)
         total_cost = data['total_cost']
         pdf_data = data['pdf']
+        supplier = data['supplier']
         line_items = data['line_items']
         format, imgstr = pdf_data.split(';base64,')
         ext = format.split('/')[-1]
         data = ContentFile(base64.b64decode(imgstr), name='temp.' + ext)
-        quote = Committed_quotes.objects.create(total_cost=total_cost, pdf=data)
+        quote = Committed_quotes.objects.create(total_cost=total_cost, pdf=data, supplier=supplier)  # Add supplier here
         for item in line_items:
             amount = item['amount']
             if amount == '':
                 amount = '0'  # Or handle this however you want
             Committed_allocations.objects.create(quote=quote, item=item['item'], amount=amount)
+        return JsonResponse({'status': 'success'})
 
+@csrf_exempt
+def update_costing(request):
+    if request.method == 'POST':
+        costing_id = request.POST.get('costing_id')
+        uncommitted = request.POST.get('uncommitted')
+
+        # Get the Costing object and update it
+        costing = Costing.objects.get(id=costing_id)
+        costing.uncommitted = uncommitted
+        costing.save()
+
+        # Return a JSON response
         return JsonResponse({'status': 'success'})

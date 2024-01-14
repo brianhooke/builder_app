@@ -7,14 +7,22 @@
   Contract Admin
 {% endblock %}
 
-
 {% block content %}
 <h1>Contract Admin Home Page</h1>
 <p>65 Spitfire Place</p>
 
 <!-- Add this inside your HTML where you want the button -->
-<button id="commitCostsBtn">Commit Costs</button>
-<input type="file" id="pdfInput" accept="application/pdf" style="display: none;" />
+<div>
+  <button id="commitCostsBtn">Commit Costs</button>
+</div>
+
+<div>
+  <button id="committedQuotesBtn">Committed Quotes</button>
+</div>
+
+<div>
+  <input type="file" id="pdfInput" accept="application/pdf" style="display: none;" />
+</div>
 
 <form method="post" action="{% url 'upload_csv' %}" enctype="multipart/form-data">
   {% csrf_token %}
@@ -24,6 +32,8 @@
 
 <!-- Table to display Costing data -->
 <div style="overflow-x:auto;">
+  <!-- Add this line to your template to output the value of committed_allocations_sums -->
+  {{ committed_allocations_sums }}
   <table style="width:100%; border-collapse: collapse;">
     <thead>
       <tr style="background-image: linear-gradient(45deg, #A090D0 0%, #B3E1DD 100%);">
@@ -52,7 +62,7 @@
           {% if total|floatformat:2 == "0.00" %}-{% else %}{{ total|floatformat:2|intcomma }}{% endif %}
         {% endwith %}</td>
         <td><a href="#" data-toggle="modal" data-target="#editModal{{ costing.id }}" data-id="{{ costing.id }}">{{ costing.uncommitted|floatformat:2|intcomma }}</a></td>
-        <td><a href="#" data-toggle="modal" data-target="#editModal{{ costing.id }}" data-id="{{ costing.id }}">{{ costing.committed|floatformat:2|intcomma }}</a></td>
+        <td>{{ costing.committed|floatformat:2|intcomma }}</td>
         <td>{% if costing.complete_on_site|floatformat:2 == "0.00" %}-{% else %}{{ costing.complete_on_site|floatformat:2|intcomma }}{% endif %}</td>
         <td>{% if costing.hc_next_claim|floatformat:2 == "0.00" %}-{% else %}{{ costing.hc_next_claim|floatformat:2|intcomma }}{% endif %}</td>
         <td>{% if costing.hc_received|floatformat:2 == "0.00" %}-{% else %}{{ costing.hc_received|floatformat:2|intcomma }}{% endif %}</td>
@@ -69,6 +79,7 @@
         <td>{% if totals.total_forecast_budget == 0 %}-{% else %}{{ totals.total_forecast_budget|floatformat:2|intcomma }}{% endif %}</td>
         <td>{% if totals.total_uncommitted == 0 %}-{% else %}{{ totals.total_uncommitted|floatformat:2|intcomma }}{% endif %}</td>
         <td>{% if totals.total_committed == 0 %}-{% else %}{{ totals.total_committed|floatformat:2|intcomma }}{% endif %}</td>
+        <td></td>
         <td>{% if totals.total_complete_on_site == 0 %}-{% else %}{{ totals.total_complete_on_site|floatformat:2|intcomma }}{% endif %}</td>
         <td>{% if totals.total_hc_next_claim == 0 %}-{% else %}{{ totals.total_hc_next_claim|floatformat:2|intcomma }}{% endif %}</td>
         <td>{% if totals.total_hc_received == 0 %}-{% else %}{{ totals.total_hc_received|floatformat:2|intcomma }}{% endif %}</td>
@@ -109,8 +120,10 @@
           <!-- Editable costs -->
           <tr>
             <td>Edited</td>
-            <td><input type="number" class="form-control committed-input" id="uncommittedInput{{ costing.id }}" value="{{ costing.uncommitted }}"></td>
-            <td><input type="number" class="form-control committed-input" id="committedInput{{ costing.id }}" value="{{ costing.committed }}"></td>
+            <td>
+              <input type="number" class="form-control committed-input" id="uncommittedInput{{ costing.id }}" value="{{ costing.uncommitted }}">
+            </td>
+            <td>{{ costing.committed|floatformat:2|intcomma }}</td>
             <td id="total{{ costing.id }}">{{ costing.committed|add:costing.uncommitted|floatformat:2|intcomma }}</td>
           </tr>
         </table>
@@ -127,7 +140,121 @@
 
 {{ items|json_script:"items-data" }}
 
+<script> //send uncommitted costs to DB
+$('.save-costs').click(function() {
+    var costingId = $(this).data('id');  // Get the costing id from the data-id attribute
+    var newUncommittedValue = $('#uncommittedInput' + costingId).val();  // Get the new uncommitted value from the input field
+
+    // Send an AJAX request to the server
+    $.ajax({
+        url: '/contract_admin/update-costing/',
+        type: 'POST',
+        data: {
+            'costing_id': costingId,
+            'uncommitted': newUncommittedValue
+        },
+        success: function(response) {
+            // Close the modal
+            $('#editModal' + costingId).modal('hide');
+
+            // Refresh the page
+            location.reload();
+        }
+    });
+});
+</script>
+
 <script src="{% static 'builder_app/commit_costs.js' %}"></script>
+
+// Fetch committed quotes from the context
+<script type="text/javascript">
+  var committedQuotes = JSON.parse('{{ committed_quotes|escapejs|safe }}');
+  var committed_allocations = JSON.parse('{{ committed_allocations|escapejs|safe }}');
+  </script>
+
+<script>
+// Create a new div element
+var newDiv = document.createElement("div");
+
+// Set the innerHTML of the div
+newDiv.innerHTML = `
+<div class="modal fade" id="committedQuotesModal" tabindex="-1" role="dialog" aria-labelledby="committedQuotesModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="committedQuotesModalLabel">Committed Quotes</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <table id="committedQuotesTable" class="table">
+          <thead>
+            <tr>
+              <th>Quote #</th>
+              <th>Supplier</th>
+              <th>Total Cost</th>
+              <th class="delete-column">Delete</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Table rows will be inserted here -->
+          </tbody>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary">Save changes</button>
+      </div>
+    </div>
+  </div>
+</div>`;
+// Append the new div to the body
+document.body.appendChild(newDiv);
+// Add event listener to the button
+document.getElementById('committedQuotesBtn').addEventListener('click', function() {
+    $('#committedQuotesModal').modal('show');
+});
+// Get the table body
+var tableBody = document.querySelector("#committedQuotesTable tbody");
+// Loop through each committed quote
+
+committedQuotes.forEach(function(quote) {
+    // Format total_cost with thousands separator
+    var totalCostFormatted = parseFloat(quote.fields.total_cost).toLocaleString();
+    var supplier = quote.fields.supplier;
+    // Create a new table row for each quote
+    var newRow = document.createElement("tr");
+    newRow.innerHTML = `<td><a href="#" class="quote-link">${quote.pk}</a></td><td>${supplier}</td><td>${totalCostFormatted}</td><td class="delete-column"><button class="btn btn-danger delete-btn">X</button></td>`;
+    // Append the table row to the table body
+    tableBody.appendChild(newRow);
+    // Add event listener to the 'Quote #' cell
+    newRow.children[0].addEventListener('click', function() {
+    // Get the quote data
+    var quote = committedQuotes.find(q => q.pk == this.textContent);
+    var allocations = committed_allocations.filter(a => a.fields.quote === quote.pk);
+    // Open the modal
+    $('#committedQuotesModal').modal('hide');
+    // Pass the PDF data and supplier to the displayCombinedModal function
+    displayCombinedModal(quote.fields.pdf, quote.fields.supplier, quote.fields.total_cost, allocations);
+});
+});
+
+function populateModal(quoteNumber) {
+    console.log(committed_allocations);
+    // Retrieve the corresponding Committed_quotes and Committed_allocations data
+    var quote = committedQuotes.find(q => q.pk === quoteNumber);
+    var allocations = committed_allocations.filter(a => a.fields.quote === quoteNumber);
+    // Populate the modal fields with this data
+    document.getElementById('supplierInput').value = quote.fields.supplier;
+    document.getElementById('totalCostInput').value = quote.fields.total_cost;
+    allocations.forEach(function(allocation) {
+        addLineItem(allocation.fields.item, allocation.fields.amount);
+    });
+    // Open the modal
+    $('#combinedModal').modal('show');
+}
+</script>
 
 {% endblock %}
 

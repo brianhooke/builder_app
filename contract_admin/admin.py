@@ -5,10 +5,10 @@ class CategoriesAdmin(admin.ModelAdmin):
     list_display = ("category", "order_in_list")
 
 class CostingAdmin(admin.ModelAdmin):
-    list_display = ("category", "item", "contract_budget", "committed", "uncommitted", "complete_on_site", "hc_next_claim", "hc_received", "sc_invoiced", "sc_paid", "notes")
+    list_display = ("category", "item", "contract_budget", "uncommitted", "complete_on_site", "hc_next_claim", "hc_received", "sc_invoiced", "sc_paid", "notes")
 
 class Committed_quotesAdmin(admin.ModelAdmin):
-    list_display = ("quote", "total_cost", "pdf")
+    list_display = ("quote", "total_cost", "supplier", "pdf")
 
 class Committed_allocationsAdmin(admin.ModelAdmin):
     list_display = ("quote", "item", "amount")

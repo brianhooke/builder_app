@@ -209,3 +209,29 @@ div.overflow-x:auto {
   font-size: 1.2em;  /* Adjust as needed */
   font-weight: bold;
 }
+
+.delete-btn {
+  padding: 5px !important;  /* Adjust as needed to change the size of the button */
+  font-size: 0.8rem;  /* Adjust as needed to change the size of the text */
+  background-image: linear-gradient(45deg, #A090D0, #B3E1DD);
+  border: none !important;  /* Remove default button border */
+}
+
+.delete-column {
+  width: 50px;  /* Adjust as needed to change the width of the column */
+  text-align: center;  /* Center the content of the cells */
+}
+
+#quoteModal {
+  z-index: 1050000;  /* Increase as needed to bring the modal to the front */
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type="number"] {
+    -moz-appearance: textfield;
+}
