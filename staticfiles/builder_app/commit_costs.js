@@ -18,8 +18,19 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-function displayCombinedModal(pdfFilename, supplier, totalCost, allocations) {
-    var pdfUrl = '/media/' + pdfFilename.replace('pdfs/', '');
+function displayCombinedModal(pdfFilename, quote_id, supplier, totalCost, allocations, updating = false) {
+    var pdfUrl;
+    if (arguments.length === 1) {
+        // If only one argument is passed, it's pdfData
+        pdfUrl = pdfFilename;  // In this case, pdfFilename is actually pdfData
+        quote_id=""
+        supplier = "";
+        totalCost = 0.00;
+        allocations = [];
+    } else {
+        // If four arguments are passed, it's pdfFilename, supplier, totalCost, allocations
+        pdfUrl = '/media/' + pdfFilename.replace('pdfs/', '');
+    }
     var combinedModalHTML = `
         <div id="combinedModal">
         <div class="pdf-viewer">
@@ -43,6 +54,7 @@ function displayCombinedModal(pdfFilename, supplier, totalCost, allocations) {
                         <th colspan="2">Uncommitted</th>
                         <th colspan="2">Committed</th>
                         <th colspan="2">Total</th>
+                        <th rowspan="2" class="delete-cell-header">Delete</th>
                     </tr>
                     <tr>
                         <th>Old</th>
@@ -63,15 +75,15 @@ function displayCombinedModal(pdfFilename, supplier, totalCost, allocations) {
             </table>
             <button id="addRowButton">+</button>
             <button id="closeBtn">Close</button>
-            <button id="commitBtn" style="float: right;">Commit</button>
-        </div>
+            <button id="commitBtn" style="float: right; display: ${updating ? 'none' : 'inline-block'};">Commit</button>
+            <button id="updateBtn" style="float: right; display: ${updating ? 'inline-block' : 'none'};">Update</button>
+            </div>
     </div>
     `;
     // Create a new div and set its innerHTML to the modal HTML
     var modalDiv = document.createElement('div');
     modalDiv.innerHTML = combinedModalHTML;
     document.body.appendChild(modalDiv);
-
     // Add event listener to the 'add row' button
     document.getElementById('addRowButton').addEventListener('click', function() {
         addLineItem();
@@ -83,7 +95,6 @@ function displayCombinedModal(pdfFilename, supplier, totalCost, allocations) {
     });
     // Set the default value of the 'total cost' input to 0.00
     var totalCostInput = document.getElementById('totalCost');
-    totalCostInput.value = '0.00';
     // Add event listener to the 'total cost' input field
     totalCostInput.addEventListener('input', updateStillToAllocateValue);
     // Set up 'close' button event listener
@@ -94,68 +105,97 @@ function displayCombinedModal(pdfFilename, supplier, totalCost, allocations) {
     document.getElementById('pdfInput').value = '';
 });
 
-// Set up 'commit' button event listener
-document.getElementById('commitBtn').addEventListener('click', function() {
-    console.log('Commit button clicked');
+
+
+function gatherData() {
     var totalCost = parseFloat(document.getElementById('totalCost').value);
     totalCost = isNaN(totalCost) ? 0 : totalCost;
     var allocated = 0;
-    var supplier = document.getElementById('supplier').value;  // Get the value of the supplier field
+    var supplier = document.getElementById('supplier').value;
     var tableBody = document.getElementById('lineItemsTable').tBodies[0];
-    for (var i = 0; i < tableBody.rows.length - 1; i++) {  // Exclude the 'Still to Allocate' row
+    for (var i = 0; i < tableBody.rows.length - 1; i++) {
         var cellValue = parseFloat(tableBody.rows[i].cells[4].firstChild.value.replace(/,/g, ''));
         cellValue = isNaN(cellValue) ? 0 : cellValue;
         allocated += cellValue;
     }
     if (totalCost !== allocated) {
         alert('Total Cost does not equal Total Allocated');
-        return;
+        return null;
     }
-    if (supplier === '') {  // Check if the supplier field is blank
+    if (supplier === '') {
         alert('Need to input Supplier Name');
-        return;
+        return null;
     }
-    var pdfData = document.querySelector('.pdf-frame').src;
-    var lineItems = Array.from(document.getElementById('lineItemsTable').rows).slice(1, -1).map(function(row) {
+        // Populate the lineItemsTable with the current allocations
+        var allocations = Array.from(lineItemsTable.rows).slice(1, -1).map(function(row) {
         var selectElement = row.cells[0].querySelector('select');
         if (selectElement) {
-          var amountInput = row.cells[4].querySelector('input');
-          var amount = amountInput ? amountInput.value : '';
-          return {
-              item: selectElement.value,
-              amount: amount
-              };
+            var amountInput = row.cells[4].querySelector('input');
+            var amount = amountInput ? amountInput.value : '';
+            return {
+                item: selectElement.value,
+                amount: amount
+            };
         } else {
             return null;
         }
     }).filter(function(item) {
         return item !== null;
     });
-
     var data = {
         total_cost: totalCost,
-        pdf: pdfData,
-        line_items: lineItems,
-        supplier:  supplier
+        supplier: supplier,
+        allocations: allocations
     };
-    console.log(JSON.stringify(data));
-      fetch('/contract_admin/commit_data/', {
-      method: 'POST',
-      headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': getCookie('csrftoken')  // You need to include a function that gets the CSRF token
-      },
-      body: JSON.stringify(data)
+    if (quote_id) {
+        data.quote_id = quote_id;
+    }
+    return data;
+}
+
+document.getElementById('commitBtn').addEventListener('click', function() {
+    var data = gatherData();
+    console.log(data)
+    if (!data) return;
+    data.pdf = document.querySelector('.pdf-frame').src;
+    fetch('/contract_admin/commit_data/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify(data)
     }).then(function(response) {
-        console.log(response);
         if (response.ok) {
             alert('Data has been committed successfully.');
-            closeModal();  // Close the modal
+            closeModal();
         } else {
             alert('An error occurred.');
         }
     });
 });
+
+document.getElementById('updateBtn').addEventListener('click', function() {
+    var data = gatherData(quote_id);  // Pass quote_id here
+    console.log(data)
+    if (!data) return;
+    fetch('/contract_admin/update_quote/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify(data)
+    }).then(function(response) {
+        if (response.ok) {
+            alert('Data has been updated successfully.');
+            closeModal();
+        } else {
+            alert('An error occurred.');
+        }
+    });
+});
+
 }
 
 function addLineItem(item, amount) {
@@ -185,27 +225,55 @@ function addLineItem(item, amount) {
             newCell.innerHTML = '0';  // Default to 0
         }
     }
+    // Create a cell for the delete button
+    var deleteCell = newRow.insertCell(7);
+    deleteCell.className = 'delete-cell';  // Add a CSS class to the cell
+    var deleteButton = document.createElement('button');
+    deleteButton.textContent = 'x';
+    deleteButton.addEventListener('click', function() {
+        // Remove the row from the table when the button is clicked
+        newRow.remove();
+    });
+    deleteCell.appendChild(deleteButton);
+        // Add an event listener to the select element
+        select.addEventListener('change', function() {
+            var selectedItem = itemsData.find(function(item) {
+                return item.item === this.value;
+            }.bind(this));
+            if (selectedItem) {
+                var formattedUncommitted = parseFloat(selectedItem.uncommitted).toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                newRow.cells[1].innerHTML = formattedUncommitted;
+                newRow.cells[2].children[0].value = parseFloat(selectedItem.uncommitted).toFixed(2);
+                var sum = parseFloat(newRow.cells[1].innerHTML.replace(/,/g, '')) + parseFloat(newRow.cells[3].innerHTML.replace(/,/g, ''));
+                newRow.cells[5].innerHTML = (isNaN(sum) ? '0' : sum.toFixed(2)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                updateStillToAllocateValue();
+            }
+        });
     // Set the select element's value to the item
     if (item) {
         select.value = item;
+        // Trigger the change event
+        var event = new Event('change');
+        select.dispatchEvent(event);
     }
     // Set the input elements' values to the amount
     if (amount) {
-        newRow.cells[2].children[0].value = amount;
         newRow.cells[4].children[0].value = amount;
     }
-      // Add an event listener to the select element
-      select.addEventListener('change', function() {
-          var selectedItem = itemsData.find(function(item) {
-              return item.item === this.value;
-          }.bind(this));
-          if (selectedItem) {
-              newRow.cells[1].innerHTML = parseFloat(selectedItem.uncommitted).toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-              var sum = parseFloat(newRow.cells[1].innerHTML.replace(/,/g, '')) + parseFloat(newRow.cells[3].innerHTML.replace(/,/g, ''));
-              newRow.cells[5].innerHTML = (isNaN(sum) ? '0' : sum.toFixed(2)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-              updateStillToAllocateValue();
-          }
-      });
+    // Add an event listener to the select element
+    select.addEventListener('change', function() {
+        var selectedItem = itemsData.find(function(item) {
+            return item.item === this.value;
+        }.bind(this));
+        if (selectedItem) {
+            var formattedUncommitted = parseFloat(selectedItem.uncommitted).toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            newRow.cells[1].innerHTML = formattedUncommitted;
+            newRow.cells[2].children[0].value = parseFloat(selectedItem.uncommitted).toFixed(2);
+            var sum = parseFloat(newRow.cells[1].innerHTML.replace(/,/g, '')) + parseFloat(newRow.cells[3].innerHTML.replace(/,/g, ''));
+            newRow.cells[5].innerHTML = (isNaN(sum) ? '0' : sum.toFixed(2)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            updateStillToAllocateValue();
+        }
+    });
     // Get the 'Still to Allocate' row
     var stillToAllocateRow = document.getElementById('stillToAllocateRow');
     // Insert the new row before the 'Still to Allocate' row

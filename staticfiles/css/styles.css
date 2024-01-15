@@ -235,3 +235,13 @@ input[type="number"]::-webkit-outer-spin-button {
 input[type="number"] {
     -moz-appearance: textfield;
 }
+
+#lineItemsTable th {
+  width: 14%;  /* Adjust this value as needed */
+}
+
+.delete-cell,
+.delete-cell-header {
+    width: 1px;
+    white-space: nowrap;
+}

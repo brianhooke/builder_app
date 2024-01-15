@@ -26,7 +26,7 @@ class Committed_quotes(models.Model):
     quote = models.AutoField(primary_key=True)
     total_cost = models.DecimalField(max_digits=10, decimal_places=2)
     supplier = models.CharField(max_length=100)
-    pdf = models.FileField(upload_to='pdfs/')
+    pdf = models.FileField(upload_to='')
     def __str__(self):
         return f"Quote: {self.quote}, Total Cost: {self.total_cost}, Supplier: {self.supplier}"
     

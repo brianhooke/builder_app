@@ -221,6 +221,7 @@ var tableBody = document.querySelector("#committedQuotesTable tbody");
 
 committedQuotes.forEach(function(quote) {
     // Format total_cost with thousands separator
+    var quote_id = quote.pk;
     var totalCostFormatted = parseFloat(quote.fields.total_cost).toLocaleString();
     var supplier = quote.fields.supplier;
     // Create a new table row for each quote
@@ -228,16 +229,46 @@ committedQuotes.forEach(function(quote) {
     newRow.innerHTML = `<td><a href="#" class="quote-link">${quote.pk}</a></td><td>${supplier}</td><td>${totalCostFormatted}</td><td class="delete-column"><button class="btn btn-danger delete-btn">X</button></td>`;
     // Append the table row to the table body
     tableBody.appendChild(newRow);
+        // Add event listener to the delete button
+        newRow.children[3].children[0].addEventListener('click', function(event) {
+        event.preventDefault();
+        var confirmed = window.confirm('Are you sure you want to delete this quote?');
+        if (confirmed) {
+            // Send delete request to the server
+            fetch('contract_admin/delete_quote/', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    id: quote.pk,
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Remove the row from the table
+                    newRow.remove();
+                } else {
+                    window.alert('Failed to delete quote: ' + data.message);
+                }
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+        }
+    });
     // Add event listener to the 'Quote #' cell
     newRow.children[0].addEventListener('click', function() {
     // Get the quote data
     var quote = committedQuotes.find(q => q.pk == this.textContent);
     var allocations = committed_allocations.filter(a => a.fields.quote === quote.pk);
+    var totalCost = parseFloat(totalCostFormatted.replace(/,/g, ''));
     // Open the modal
     $('#committedQuotesModal').modal('hide');
     // Pass the PDF data and supplier to the displayCombinedModal function
-    displayCombinedModal(quote.fields.pdf, quote.fields.supplier, quote.fields.total_cost, allocations);
-});
+    displayCombinedModal(quote.fields.pdf, quote_id, supplier, totalCost, allocations, true);
+    });
 });
 
 function populateModal(quoteNumber) {

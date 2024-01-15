@@ -12,6 +12,8 @@ import base64
 import uuid
 from django.core import serializers
 from django.forms.models import model_to_dict
+from django.core.files.storage import default_storage
+from django.core.exceptions import ObjectDoesNotExist
 
  
 def contract_admin(request):
@@ -108,7 +110,6 @@ def update_costs(request):
 def commit_data(request):
     if request.method == 'POST':
         data = json.loads(request.body)
-        print(data)  # Print the received data
         data = json.loads(request.body)
         total_cost = data['total_cost']
         pdf_data = data['pdf']
@@ -130,11 +131,51 @@ def update_costing(request):
     if request.method == 'POST':
         costing_id = request.POST.get('costing_id')
         uncommitted = request.POST.get('uncommitted')
-
         # Get the Costing object and update it
         costing = Costing.objects.get(id=costing_id)
         costing.uncommitted = uncommitted
         costing.save()
-
         # Return a JSON response
         return JsonResponse({'status': 'success'})
+
+@csrf_exempt
+def delete_quote(request):
+    if request.method == 'DELETE':
+        data = json.loads(request.body)
+        quote_id = data.get('id')
+        if quote_id is not None:
+            try:
+                quote = Committed_quotes.objects.get(pk=quote_id)
+                quote.delete()
+                return JsonResponse({'status': 'success'})
+            except Committed_quotes.DoesNotExist:
+                return JsonResponse({'status': 'error', 'message': 'Quote not found'}, status=404)
+            except Exception as e:
+                return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+        else:
+            return JsonResponse({'status': 'error', 'message': 'Invalid request'}, status=400)
+    
+@csrf_exempt
+def update_quote(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        quote_id = data.get('quote_id')
+        total_cost = data.get('total_cost')
+        supplier = data.get('supplier')
+        allocations = data.get('allocations')
+        try:
+            quote = Committed_quotes.objects.get(pk=quote_id)
+        except Committed_quotes.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Quote not found'})
+        quote.total_cost = total_cost
+        quote.supplier = supplier
+        quote.save()
+        # Delete the existing allocations for the quote
+        Committed_allocations.objects.filter(quote_id=quote_id).delete()
+        # Save the new allocations
+        for allocation in allocations:
+            alloc = Committed_allocations(quote_id=quote_id, item=allocation['item'], amount=allocation['amount'])
+            alloc.save()
+        return JsonResponse({'status': 'success'})
+    else:
+        return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
