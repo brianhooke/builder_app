@@ -308,10 +308,9 @@ function populateModal(quoteNumber) {
     allocations.forEach(function(allocation) {
         addLineItem(allocation.fields.item, allocation.fields.amount);
     });
-    // Open the modal
+    // Open the modaly
     $('#combinedModal').modal('show');
 }
 </script>
 
 {% endblock %}
-
