@@ -168,7 +168,7 @@ document.getElementById('commitBtn').addEventListener('click', function() {
         body: JSON.stringify(data)
     }).then(function(response) {
         if (response.ok) {
-            alert('Data has been committed successfully.');
+            alert('Costs uploaded successfully.');
             location.reload();
         } else {
             alert('An error occurred.');
@@ -189,7 +189,7 @@ document.getElementById('updateBtn').addEventListener('click', function() {
         body: JSON.stringify(data)
     }).then(function(response) {
         if (response.ok) {
-            alert('Data has been updated successfully.');
+            alert('Costs updated successfully.');
             location.reload();
         } else {
             alert('An error occurred.');

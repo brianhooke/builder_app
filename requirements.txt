@@ -3,3 +3,4 @@ Django==4.2.3
 pip==23.3.2
 wheel==0.40.0
 gunicorn
+whitenoise
