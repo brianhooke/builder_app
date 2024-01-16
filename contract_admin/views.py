@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
  
 def contract_admin(request):
     form = CSVUploadForm()  # Instantiate your form
-    costings = Costing.objects.all()  # Retrieve all Costing objects
+    costings = Costing.objects.all().order_by('category__order_in_list', 'category__category')  # Retrieve all Costing objects and sort them
     # Convert each 'costing' object to a dictionary and add 'committed'
     costings = [model_to_dict(costing) for costing in costings]
     for costing in costings:
