@@ -8,7 +8,7 @@ grpcio-status==1.54.2
 matplotlib==3.7.1
 openai==0.27.4
 opencv-python-headless==4.7.0.72
-ortools==9.6.2534
+ortools==9.7.2996
 pandas==2.0.3
 pdf2image==1.16.3
 pdfplumber==0.9.0
