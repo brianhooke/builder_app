@@ -67,7 +67,8 @@ def upload_csv(request):
             decoded_file = csv_file.read().decode('utf-8').splitlines()
             reader = csv.DictReader(decoded_file)
             print(next(reader))  # This will print the first row of the CSV to your console
-            
+            # Delete existing data
+            Costing.objects.all().delete()
             for row in reader:
                 category, created = Categories.objects.get_or_create(category=row['category'])
                 Costing.objects.create(
@@ -82,11 +83,11 @@ def upload_csv(request):
                     sc_paid=row['sc_paid'],
                     notes=row['notes']
                 )
-            return HttpResponse("CSV file uploaded successfully")
+            return JsonResponse({"message": "CSV file uploaded successfully"}, status=200)
+        else:
+            return JsonResponse({"message": str(form.errors)}, status=400)
     else:
         form = CSVUploadForm()
-    
-    return render(request, 'contract_admin.html', {'form': form})
 
 def update_costs(request):
     if request.method == 'POST':
@@ -104,7 +105,7 @@ def update_costs(request):
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     else:
         return JsonResponse({'status': 'error', 'message': 'Invalid request'}, status=400)
-    
+
 
 @csrf_exempt
 def commit_data(request):
@@ -114,16 +115,19 @@ def commit_data(request):
         total_cost = data['total_cost']
         pdf_data = data['pdf']
         supplier = data['supplier']
-        line_items = data['line_items']
+        allocations = data.get('allocations')
         format, imgstr = pdf_data.split(';base64,')
         ext = format.split('/')[-1]
         data = ContentFile(base64.b64decode(imgstr), name='temp.' + ext)
         quote = Committed_quotes.objects.create(total_cost=total_cost, pdf=data, supplier=supplier)  # Add supplier here
-        for item in line_items:
+        for item in allocations:
             amount = item['amount']
             if amount == '':
-                amount = '0'  # Or handle this however you want
+                amount = '0'
             Committed_allocations.objects.create(quote=quote, item=item['item'], amount=amount)
+            # Update the Costing.uncommitted field
+            uncommitted = item['uncommitted']
+            Costing.objects.filter(item=item['item']).update(uncommitted=uncommitted)
         return JsonResponse({'status': 'success'})
 
 @csrf_exempt
@@ -154,7 +158,7 @@ def delete_quote(request):
                 return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
         else:
             return JsonResponse({'status': 'error', 'message': 'Invalid request'}, status=400)
-    
+
 @csrf_exempt
 def update_quote(request):
     if request.method == 'POST':
@@ -176,6 +180,9 @@ def update_quote(request):
         for allocation in allocations:
             alloc = Committed_allocations(quote_id=quote_id, item=allocation['item'], amount=allocation['amount'])
             alloc.save()
+            # Update the Costing.uncommitted field
+            uncommitted = allocation['uncommitted']
+            Costing.objects.filter(item=allocation['item']).update(uncommitted=uncommitted)
         return JsonResponse({'status': 'success'})
     else:
         return JsonResponse({'status': 'error', 'message': 'Invalid request method'})

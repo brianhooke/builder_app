@@ -32,11 +32,11 @@ function displayCombinedModal(pdfFilename, quote_id, supplier, totalCost, alloca
         pdfUrl = '/media/' + pdfFilename.replace('pdfs/', '');
     }
     var combinedModalHTML = `
-        <div id="combinedModal">
-        <div class="pdf-viewer">
+        <div id="combinedModal" style="display: flex;">
+        <div class="pdf-viewer" style="width: 40%;">
             <iframe src="${pdfUrl}" class="pdf-frame"></iframe>
         </div>
-        <div class="cost-details">
+        <div class="cost-details" style="width: 60%;">
             <h2>Commit Costs</h2>
             <div class="input-field">
                 <label for="supplier">Supplier:</label>
@@ -47,33 +47,31 @@ function displayCombinedModal(pdfFilename, quote_id, supplier, totalCost, alloca
                 <input type="number" id="totalCost" step="0.01" placeholder="0.00" class="total-cost-input" value="${totalCost}">
             </div>
             <h3>Line Items</h3>
-            <table id="lineItemsTable">
-                <thead>
-                    <tr>
-                        <th rowspan="2">Item</th>
-                        <th colspan="2">Uncommitted</th>
-                        <th colspan="2">Committed</th>
-                        <th colspan="2">Total</th>
-                        <th rowspan="2" class="delete-cell-header">Delete</th>
-                    </tr>
-                    <tr>
-                        <th>Old</th>
-                        <th>New</th>
-                        <th>Total</th>
-                        <th>This Invoice</th>
-                        <th>Old</th>
-                        <th>New</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Rows will be added here -->
-                    <tr id="stillToAllocateRow">
-                        <td colspan="6">Still to Allocate</td>
-                        <td id="stillToAllocateValue">0.00</td>
-                    </tr>
-                </tbody>
-            </table>
-            <button id="addRowButton">+</button>
+            <table id="lineItemsTable" style="table-layout: fixed;">
+            <thead>
+                <tr>
+                    <th rowspan="2" style="width: 22%;">Item</th>
+                    <th colspan="2" style="width: 26%;">Uncommitted</th>
+                    <th colspan="2" style="width: 26%;">Committed</th>
+                    <th rowspan="2" style="width: 21%;">Total</th>
+                    <th rowspan="2" class="delete-cell-header" style="width: 5%;"></th>
+                </tr>
+                <tr>
+                    <th style="width: 10%;">Old</th>
+                    <th style="width: 15%;">New</th>
+                    <th style="width: 10%;">Total</th>
+                    <th style="width: 15%;">This Invoice</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Rows will be added here -->
+                <tr id="stillToAllocateRow">
+                    <td colspan="5">Still to Allocate</td>
+                    <td id="stillToAllocateValue">0.00</td>
+                </tr>
+            </tbody>
+        </table>
+        <button id="addRowButton">+</button>
             <button id="closeBtn">Close</button>
             <button id="commitBtn" style="float: right; display: ${updating ? 'none' : 'inline-block'};">Commit</button>
             <button id="updateBtn" style="float: right; display: ${updating ? 'inline-block' : 'none'};">Update</button>
@@ -126,15 +124,18 @@ function gatherData() {
         alert('Need to input Supplier Name');
         return null;
     }
-        // Populate the lineItemsTable with the current allocations
-        var allocations = Array.from(lineItemsTable.rows).slice(1, -1).map(function(row) {
+    // Populate the lineItemsTable with the current allocations
+    var allocations = Array.from(lineItemsTable.rows).slice(1, -1).map(function(row) {
         var selectElement = row.cells[0].querySelector('select');
         if (selectElement) {
             var amountInput = row.cells[4].querySelector('input');
             var amount = amountInput ? amountInput.value : '';
+            var uncommittedInput = row.cells[2].querySelector('input');
+            var uncommitted = uncommittedInput ? uncommittedInput.value : '';            
             return {
                 item: selectElement.value,
-                amount: amount
+                amount: amount,
+                uncommitted: uncommitted // Include the uncommitted value in the allocation
             };
         } else {
             return null;
@@ -167,8 +168,8 @@ document.getElementById('commitBtn').addEventListener('click', function() {
         body: JSON.stringify(data)
     }).then(function(response) {
         if (response.ok) {
-            alert('Data has been committed successfully.');
-            closeModal();
+            alert('Costs uploaded successfully.');
+            location.reload();
         } else {
             alert('An error occurred.');
         }
@@ -188,8 +189,8 @@ document.getElementById('updateBtn').addEventListener('click', function() {
         body: JSON.stringify(data)
     }).then(function(response) {
         if (response.ok) {
-            alert('Data has been updated successfully.');
-            closeModal();
+            alert('Costs updated successfully.');
+            location.reload();
         } else {
             alert('An error occurred.');
         }
@@ -204,6 +205,7 @@ function addLineItem(item, amount) {
     var newRow = document.createElement('tr');
     // Create a dropdown list for the first cell
     var select = document.createElement('select');
+    select.style.maxWidth = "100%";
     select.innerHTML = '<option value="">Select an item</option>';  // Default option
     itemsData.forEach(function(item) {
         select.innerHTML += '<option value="' + item.item + '">' + item.item + '</option>';
@@ -226,16 +228,14 @@ function addLineItem(item, amount) {
         }
     }
     // Create a cell for the delete button
-    var deleteCell = newRow.insertCell(7);
+    var deleteCell = newRow.insertCell(6);
     deleteCell.className = 'delete-cell';  // Add a CSS class to the cell
     var deleteButton = document.createElement('button');
     deleteButton.textContent = 'x';
     deleteButton.addEventListener('click', function() {
-        // Remove the row from the table when the button is clicked
         newRow.remove();
     });
     deleteCell.appendChild(deleteButton);
-        // Add an event listener to the select element
         select.addEventListener('change', function() {
             var selectedItem = itemsData.find(function(item) {
                 return item.item === this.value;
@@ -289,9 +289,21 @@ function updateStillToAllocateValue() {
         var cellValue = parseFloat(tableBody.rows[i].cells[4].firstChild.value.replace(/,/g, ''));
         cellValue = isNaN(cellValue) ? 0 : cellValue;
         allocated += cellValue;
+        // Add event listeners to cells[2] and cells[4]
+        ['input', 'change'].forEach(function(evt) {
+            tableBody.rows[i].cells[2].firstChild.addEventListener(evt, updateCellFive);
+            tableBody.rows[i].cells[4].firstChild.addEventListener(evt, updateCellFive);
+        });
     }
     var stillToAllocateValue = totalCost - allocated;
     document.getElementById('stillToAllocateValue').innerHTML = stillToAllocateValue.toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+// Function to update 'total'[5]
+function updateCellFive() {
+    var row = this.parentNode.parentNode;
+    var sum = parseFloat(row.cells[2].firstChild.value || 0) + parseFloat(row.cells[4].firstChild.value || 0);
+    row.cells[5].innerHTML = (isNaN(sum) ? '0' : sum.toFixed(2)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
 function getCookie(name) {

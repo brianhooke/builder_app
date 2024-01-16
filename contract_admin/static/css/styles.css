@@ -87,29 +87,6 @@ div.overflow-x:auto {
   padding: 20px;
 }
 
-/* Add this to your styles.css */
-#lineItemsTable {
-  border: 1px solid #ddd;
-  margin-bottom: 10px;
-  table-layout: fixed;
-}
-
-#lineItemsTable th, #lineItemsTable td {
-  border: 1px solid #ddd;
-  padding: 8px;
-  text-align: left;
-}
-
-#lineItemsTable th:nth-child(1),
-#lineItemsTable td:nth-child(1) {
-    width: 16%;
-}
-
-#lineItemsTable th:nth-child(n+2),
-#lineItemsTable td:nth-child(n+2) {
-    width: 14%;
-}
-
 #leftSide {
   width: 40%;
   float: left;
@@ -118,14 +95,6 @@ div.overflow-x:auto {
 #rightSide {
   width: 60%;
   float: right;
-}
-
-#lineItemsTable select {
-  width: 100%;
-}
-
-#lineItemsTable input {
-  max-width: 100%;
 }
 
 #combinedModal {
@@ -142,7 +111,6 @@ div.overflow-x:auto {
 }
 
 .pdf-viewer {
-  flex: 0 0 50%;
   border-right: 1px solid #ddd;
   padding-right: 10px;
 }
@@ -154,7 +122,6 @@ div.overflow-x:auto {
 }
 
 .cost-details {
-  flex: 0 0 50%;
   padding-left: 10px;
   overflow-x: auto;
 }
@@ -163,20 +130,6 @@ div.overflow-x:auto {
   margin-bottom: 10px;
 }
 
-/* Make the input fields wider */
-#lineItemsTable input {
-  width: 90%;  /* Adjust as needed */
-}
-
-/* Make the font smaller */
-#lineItemsTable input {
-  font-size: 0.8em;  /* Adjust as needed */
-}
-
-/* Add some padding to the cells */
-#lineItemsTable td {
-  padding: 0.5em;  /* Adjust as needed */
-}
 
 /* Remove the increment/decrement arrows from the total cost field */
 #totalCost {
@@ -185,24 +138,6 @@ div.overflow-x:auto {
   appearance: textfield;
 }
 
-/* Remove the increment/decrement arrows from the input fields in columns 3 and 5 */
-#lineItemsTable input[type="number"] {
-  -webkit-appearance: textfield;  /* for Chrome */
-  -moz-appearance: textfield;  /* for Firefox */
-  appearance: textfield;
-}
-
-/* For IE and Edge */
-#lineItemsTable input[type="number"]::-webkit-inner-spin-button,
-#lineItemsTable input[type="number"]::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-/* Set the font size for all cells in the table */
-#lineItemsTable td {
-  font-size: 0.8em;  /* Adjust as needed */
-}
 
 /* Set the font size and weight for the 'Still to Allocate' row */
 #stillToAllocateRow {
@@ -236,12 +171,27 @@ input[type="number"] {
     -moz-appearance: textfield;
 }
 
-#lineItemsTable th {
-  width: 14%;  /* Adjust this value as needed */
-}
 
 .delete-cell,
 .delete-cell-header {
     width: 1px;
     white-space: nowrap;
+}
+
+.delete-column {
+  width: 5%;
+}
+
+.gradient-button {
+  background-image: linear-gradient(45deg, #B3E1DD, #A090D0);
+  border: 1px solid black;
+  color: white;
+  padding: 10px 20px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 4px 2px;
+  cursor: pointer;
+  border-radius: 12px;
 }
