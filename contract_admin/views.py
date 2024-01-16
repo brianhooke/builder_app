@@ -14,6 +14,11 @@ from django.core import serializers
 from django.forms.models import model_to_dict
 from django.core.files.storage import default_storage
 from django.core.exceptions import ObjectDoesNotExist
+import logging
+
+# Create a logger
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
  
 def contract_admin(request):
@@ -88,6 +93,32 @@ def upload_csv(request):
             return JsonResponse({"message": str(form.errors)}, status=400)
     else:
         form = CSVUploadForm()
+
+@csrf_exempt
+def upload_categories(request):
+    if request.method == 'POST':
+        form = CSVUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            csv_file = request.FILES['csv_file']
+            decoded_file = csv_file.read().decode('utf-8').splitlines()
+            reader = csv.DictReader(decoded_file)
+            logger.info('CSV file decoded and reader created')
+            Categories.objects.all().delete()
+            logger.info('All existing Categories objects deleted')
+            for row in reader:
+                Categories.objects.create(
+                    category=row['category'],
+                    order_in_list=row['order_in_list']
+                )
+                logger.info('Created new Categories object: %s', row)
+            return JsonResponse({"message": "CSV file uploaded successfully"}, status=200)
+        else:
+            logger.error('Form is not valid: %s', form.errors)
+            return JsonResponse({"message": str(form.errors)}, status=400)
+    else:
+        form = CSVUploadForm()
+        logger.info('GET request received, CSVUploadForm created')
+
 
 def update_costs(request):
     if request.method == 'POST':
