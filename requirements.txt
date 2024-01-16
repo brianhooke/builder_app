@@ -44,7 +44,6 @@ kiwisolver==1.4.4
 marshmallow==3.20.2
 matplotlib==3.7.1
 multidict==6.0.4
-numpy==1.24.3
 openai==0.27.4
 opencv-python-headless==4.7.0.72
 ortools==9.6.2534
