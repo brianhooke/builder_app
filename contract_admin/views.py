@@ -15,13 +15,14 @@ from django.forms.models import model_to_dict
 from django.core.files.storage import default_storage
 from django.core.exceptions import ObjectDoesNotExist
 import logging
+from django.conf import settings
 
 # Create a logger
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
  
 def contract_admin(request):
+    print(settings.MEDIA_ROOT)
     form = CSVUploadForm()  # Instantiate your form
     costings = Costing.objects.all().order_by('category__order_in_list', 'category__category')  # Retrieve all Costing objects and sort them
     # Convert each 'costing' object to a dictionary and add 'committed'

@@ -33,26 +33,28 @@
 <input type="file" id="csvFile" accept=".csv" style="display: none;" /> -->
 
 <!-- Table to display Costing data -->
-<div style="overflow-x:auto;">
+<div style="overflow-x: visible;">
   <!-- Add this line to your template to output the value of committed_allocations_sums -->
   {{ committed_allocations_sums }}
   <table style="width:100%; border-collapse: collapse;">
     <thead>
-      <tr style="background-image: linear-gradient(45deg, #A090D0 0%, #B3E1DD 100%);">
-        <th>Category</th>
-        <th>Item</th>
-        <th>Contract Budget</th>
-        <th>Working Budget</th>
-        <th>Uncommitted</th>
-        <th>Committed</th>
-        <th>Complete On Site</th>
-        <th>HC Next Claim</th>
-        <th>HC Received</th>
-        <th>SC Invoiced</th>
-        <th>SC Paid</th>
-        <th>Notes</th>
+      <tr style="height: 20px; position: sticky; top: 0;">
+        <td colspan="11" style="background-color: white;"></td>
       </tr>
-    </thead>
+      <tr>
+        <th style="position: sticky; top: 20px;">Item</th>
+        <th style="position: sticky; top: 20px;">Contract Budget</th>
+        <th style="position: sticky; top: 20px;">Working Budget</th>
+        <th style="position: sticky; top: 20px;">Uncommitted</th>
+        <th style="position: sticky; top: 20px;">Committed</th>
+        <th style="position: sticky; top: 20px;">Complete On Site</th>
+        <th style="position: sticky; top: 20px;">HC Next Claim</th>
+        <th style="position: sticky; top: 20px;">HC Received</th>
+        <th style="position: sticky; top: 20px;">SC Invoiced</th>
+        <th style="position: sticky; top: 20px;">SC Paid</th>
+        <th style="position: sticky; top: 20px;">Notes</th>
+      </tr>
+  </thead>
     <tbody>
       {% for costing in costings %}
       <tr>

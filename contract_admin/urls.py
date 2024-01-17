@@ -15,3 +15,6 @@ urlpatterns = [
     path('delete_quote/', views.delete_quote, name='delete_quote'),
     path('update_quote/', views.update_quote, name='update_quote'),    
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
