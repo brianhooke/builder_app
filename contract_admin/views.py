@@ -1,7 +1,7 @@
 import csv
 from django.shortcuts import render
 from .forms import CSVUploadForm
-from .models import Costing, Categories, Committed_quotes, Committed_allocations
+from .models import Costing, Categories, Committed_quotes, Committed_allocations, Claims, Claim_allocations, Hc_claims, Hc_claim_lines
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.template import loader
@@ -16,16 +16,23 @@ from django.core.files.storage import default_storage
 from django.core.exceptions import ObjectDoesNotExist
 import logging
 from django.conf import settings
+from django.shortcuts import get_object_or_404
+from decimal import Decimal
 
 # Create a logger
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
- 
+
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            return str(obj)
+        return super(DecimalEncoder, self).default(obj)
+
 def contract_admin(request):
     print(settings.MEDIA_ROOT)
-    form = CSVUploadForm()  # Instantiate your form
-    costings = Costing.objects.all().order_by('category__order_in_list', 'category__category')  # Retrieve all Costing objects and sort them
-    # Convert each 'costing' object to a dictionary and add 'committed'
+    form = CSVUploadForm()  # Instantiate your form 
+    costings = Costing.objects.all().order_by('category__order_in_list', 'category__category', 'item')    # Convert each 'costing' object to a dictionary and add 'committed'
     costings = [model_to_dict(costing) for costing in costings]
     for costing in costings:
         category = Categories.objects.get(pk=costing['category'])
@@ -38,12 +45,37 @@ def contract_admin(request):
     # Append 'committed' to 'items'
     for costing in costings:
         costing['committed'] = committed_allocations_sums_dict.get(costing['item'], 0)    # New: Retrieve a list of items for the dropdown
+    # Retrieve all Hc_claim_lines objects to create a dictionary of items | hc_claimed
+    hc_claim_lines_sums = Hc_claim_lines.objects.values('item_id').annotate(total_amount=Sum('amount'))
+    hc_claim_lines_sums_dict = {item['item_id']: item['total_amount'] for item in hc_claim_lines_sums}
+    # Append 'hc_claimed' to 'costings'
+# Append 'hc_claimed' and 'hc_claimed_amount' to 'costings' --> DOESN"T WORK!
+    for costing in costings:
+        hc_claimed_amount = hc_claim_lines_sums_dict.get(costing['id'])
+        if hc_claimed_amount is not None:
+            costing['hc_claimed_amount'] = str(hc_claimed_amount)
+        else:
+            costing['hc_claimed_amount'] = '0.00'
+        costing['hc_claimed'] = hc_claimed_amount or 0
     items = [{'item': costing['item'], 'uncommitted': costing['uncommitted'], 'committed': costing['committed']} for costing in costings]
     # Retrieve all Committed_quotes and Committed_allocations objects
     committed_quotes = Committed_quotes.objects.all()
+    logger.info(committed_quotes)
     committed_quotes_json = serializers.serialize('json', committed_quotes)
     committed_allocations_json = serializers.serialize('json', committed_allocations)
+    # Retrieve all Claims and Claim_allocations objects
+    claims = Claims.objects.all()
+    claims_json = serializers.serialize('json', claims)
+    claim_allocations = Claim_allocations.objects.all()
+    claim_allocations_json = serializers.serialize('json', claim_allocations)
     total_committed = sum(costing['committed'] for costing in costings)
+    hc_claimed = [
+    {
+        'id': costing['id'],
+        'amount': hc_claim_lines_sums_dict.get(str(costing['id']), '0.00')
+    }
+    for costing in costings
+    ]
     totals = {
         'total_contract_budget': Costing.objects.aggregate(Sum('contract_budget'))['contract_budget__sum'] or 0,
         'total_committed': total_committed,
@@ -62,6 +94,10 @@ def contract_admin(request):
         'totals': totals,
         'committed_quotes': committed_quotes_json,
         'committed_allocations': committed_allocations_json,  # Add committed_allocations to context
+        'claims': claims_json,
+        'claim_allocations': claim_allocations_json,  # Add claims and claim_allocations to context
+        'hc_claim_lines_sums': hc_claim_lines_sums_dict,
+        'hc_claimed': json.dumps(hc_claimed, cls=DecimalEncoder),
     }
     return render(request, 'contract_admin.html', context)
 
@@ -137,6 +173,29 @@ def update_costs(request):
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     else:
         return JsonResponse({'status': 'error', 'message': 'Invalid request'}, status=400)
+    
+@csrf_exempt
+def update_complete_on_site(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        costing_id = data.get('id')
+        complete_on_site_data = data.get('complete_on_site')
+        try:
+            complete_on_site = float(complete_on_site_data)
+        except ValueError:
+            return JsonResponse({'status': 'error', 'message': 'Invalid complete_on_site value'}, status=400)
+        try:
+            costing = Costing.objects.get(pk=costing_id)
+            costing.complete_on_site = complete_on_site
+            costing.save()
+            return JsonResponse({'status': 'success'})
+        except Costing.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Costing not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    else:
+        return JsonResponse({'status': 'error', 'message': 'Invalid request'}, status=400)
+
 
 
 @csrf_exempt
@@ -218,3 +277,38 @@ def update_quote(request):
         return JsonResponse({'status': 'success'})
     else:
         return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
+    
+@csrf_exempt
+def commit_claim_data(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        total_cost = data['total_cost']
+        pdf_data = data['pdf']
+        allocations = data.get('allocations')
+        format, imgstr = pdf_data.split(';base64,')
+        ext = format.split('/')[-1]
+        data = ContentFile(base64.b64decode(imgstr), name='temp.' + ext)
+        claim = Claims.objects.create(total=total_cost, pdf=data)  # Create a new claim
+        for item in allocations:
+            amount = item['amount']
+            if amount == '':
+                amount = '0'
+            associated_quote_pk = item['associated_quote'] 
+            associated_quote = get_object_or_404(Committed_quotes, pk=associated_quote_pk) 
+            Claim_allocations.objects.create(claim=claim, item=item['item'], amount=amount, associated_quote=associated_quote) 
+        return JsonResponse({'status': 'success'})
+    
+@csrf_exempt
+def commit_hc_claim(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        hc_claim = Hc_claims.objects.create()
+        for item in data['data']:
+            if item['amount'] != '0':
+                Hc_claim_lines.objects.create(
+                    hc_claim=hc_claim,
+                    item_id=item['itemId'],
+                    amount=item['amount']
+                )
+        return JsonResponse({'hc_claim': hc_claim.hc_claim}, status=201)
+    return JsonResponse({'error': 'Invalid request'}, status=400)

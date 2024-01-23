@@ -24,13 +24,59 @@
   <input type="file" id="pdfInput" accept="application/pdf" style="display: none;" />
 </div>
 
-<form id="upload-form" method="post" enctype="multipart/form-data">
+<div>
+  <button id="newClaimBtn" class="gradient-button">Upload Claim</button>
+</div>
+<div>
+  <input type="file" id="newClaimPdfInput" accept="application/pdf" style="display: none;" />
+</div>
+
+<div>
+  <button id="committedClaimBtn" class="gradient-button">Committed Claims</button>
+</div>
+
+<div>
+  <button id="hcMakeClaim" class="gradient-button">Make HC Claim</button>
+</div>
+
+<div>
+  <button id="hcClaims" class="gradient-button">HC Claims</button>
+</div>
+
+<div>
+  <div>
+    <h5>Metrics <span id="arrow" style="cursor:pointer;">►</span></h5>
+  </div>
+  <table id="metrics-table" style="width:50%; display:none;">
+    <thead style="background: linear-gradient(45deg, #A090D0 0%, #B3E1DD 100%);">
+      <tr>
+        <th style="width:60%">Metric</th>
+        <th style="width:40%">Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Cash Projection</td>
+      <td id="cash-projection"></td>
+    </tr>
+    <tr>
+      <td></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td></td>
+      <td></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- <form id="upload-form" method="post" enctype="multipart/form-data">
   {% csrf_token %}
   {{ form.as_p }}
 </form>
 
 <button id="uploadButton" class="gradient-button">Upload CSV</button>
-<input type="file" id="csvFile" accept=".csv" style="display: none;" />
+<input type="file" id="csvFile" accept=".csv" style="display: none;" /> -->
 
 <!-- Table to display Costing data -->
 <div style="overflow-x: visible;">
@@ -49,7 +95,7 @@
         <th style="position: sticky; top: 20px;">Uncommitted</th>
         <th style="position: sticky; top: 20px;">Committed</th>
         <th style="position: sticky; top: 20px;">Complete On Site</th>
-        <th style="position: sticky; top: 20px;">HC Next Claim</th>
+        <th style="position: sticky; top: 20px;">HC Claimed</th>
         <th style="position: sticky; top: 20px;">HC Received</th>
         <th style="position: sticky; top: 20px;">SC Invoiced</th>
         <th style="position: sticky; top: 20px;">SC Paid</th>
@@ -68,8 +114,12 @@
         {% endwith %}</td>
         <td><a href="#" data-toggle="modal" data-target="#editModal{{ costing.id }}" data-id="{{ costing.id }}">{{ costing.uncommitted|floatformat:2|intcomma }}</a></td>
         <td>{{ costing.committed|floatformat:2|intcomma }}</td>
-        <td>{% if costing.complete_on_site|floatformat:2 == "0.00" %}-{% else %}{{ costing.complete_on_site|floatformat:2|intcomma }}{% endif %}</td>
-        <td>{% if costing.hc_next_claim|floatformat:2 == "0.00" %}-{% else %}{{ costing.hc_next_claim|floatformat:2|intcomma }}{% endif %}</td>
+        <td style="{% if costing.complete_on_site == costing.contract_budget %}background-color: #b0ebb3;{% endif %}">  
+          <a href="#" class="modal-trigger" data-id="{{ costing.id }}" data-item="{{ costing.item }}" data-complete-on-site="{{ costing.complete_on_site }}" data-contract-budget="{{ costing.contract_budget }}" data-costing-id="{{ costing.id }}">            
+            {% if costing.complete_on_site == 0 %}-{% else %}{{ costing.complete_on_site|floatformat:2|intcomma }}{% endif %}
+          </a>
+        </td>   
+        <td id="hc_claimed_{{ costing.id }}">
         <td>{% if costing.hc_received|floatformat:2 == "0.00" %}-{% else %}{{ costing.hc_received|floatformat:2|intcomma }}{% endif %}</td>
         <td>{% if costing.sc_invoiced|floatformat:2 == "0.00" %}-{% else %}{{ costing.sc_invoiced|floatformat:2|intcomma }}{% endif %}</td>
         <td>{% if costing.sc_paid|floatformat:2 == "0.00" %}-{% else %}{{ costing.sc_paid|floatformat:2|intcomma }}{% endif %}</td>
@@ -96,19 +146,17 @@
 </div>
 
 {% for costing in costings %}
-<!-- Modal -->
 <div class="modal fade" id="editModal{{ costing.id }}" tabindex="-1" role="dialog" aria-labelledby="editModalLabel{{ costing.id }}" aria-hidden="true">
   <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="editModalLabel{{ costing.id }}">Edit Costs</h5>
+    <div class="modal-content" style="border: 3px solid black;">
+      <div class="modal-header" style="text-align: center; background: linear-gradient(45deg, #A090D0 0%, #B3E1DD 100%);">
+        <h5 class="modal-title" id="editModalLabel{{ costing.id }}">{{costing.item}}</h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
       <div class="modal-body">
         <table>
-          <!-- Existing costs -->
           <tr>
             <th></th>
             <th>Uncommitted</th>
@@ -140,11 +188,20 @@
   </div>
 </div>
 
+
 {% endfor %}
 
+{{ totals|json_script:"totals-data" }}
 {{ items|json_script:"items-data" }}
+{{ committed_quotes|json_script:"committed-quotes-data" }}
+{{ committed_allocations|json_script:"committed-allocations-data" }}
+{{ costings|json_script:"costings" }}
+{{ hc_claim_lines_sums|json_script:"hc_claim_lines_sums" }}
+{{ hc_claimed|json_script:"hc_claimed" }}
+
 
 <script>
+
   $(document).ready(function() {
       $('#id_csv_file').on('change', function() {
           var form = $('#upload-form')[0];
@@ -227,9 +284,35 @@ $('.save-costs').click(function() {
 <script type="text/javascript">
   var committedQuotes = JSON.parse('{{ committed_quotes|escapejs|safe }}');
   var committed_allocations = JSON.parse('{{ committed_allocations|escapejs|safe }}');
-  </script>
+  var claim_allocations = JSON.parse('{{ claim_allocations|escapejs|safe }}');
+  var costings = JSON.parse(document.getElementById('costings').textContent);
+  var hc_claim_lines_sums = JSON.parse(document.getElementById('hc_claim_lines_sums').textContent);
+  var hc_claimed = JSON.parse(document.getElementById('hc_claimed').textContent);
+  // var costings = {{ costings|escapejs|safe }};
+</script>
 
 <script>
+
+for (var item_id in hc_claim_lines_sums) {
+    var cell = document.getElementById("hc_claimed_" + item_id);
+    if (cell) {
+        var amount = parseFloat(hc_claim_lines_sums[item_id]);
+        cell.textContent = amount.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+}
+// console.log("Here comes the data type:");
+// console.log(typeof hc_claimed);
+// console.log("Here comes the hc_claim_lines_sums:");
+// for (var item_id in hc_claim_lines_sums) {
+//     console.log("Item ID: " + item_id + ", Total Amount: " + hc_claim_lines_sums[item_id]);
+// }
+// console.log("Here comes the neighbourhood:");
+// console.log("Here comes the costings:");
+// for (var i = 0; i < costings.length; i++) {
+//     console.log("ID: " + costings[i].id + ", HC Claimed Amount: " + costings[i].hc_claimed_amount);
+// }
+// console.log("There goes the costings");
+
 // Create a new div element
 var newDiv = document.createElement("div");
 
@@ -347,5 +430,13 @@ function populateModal(quoteNumber) {
     $('#combinedModal').modal('show');
 }
 </script>
+
+
+<script src="{% static 'builder_app/metrics.js' %}"></script>
+<script src="{% static 'builder_app/claims.js' %}"></script>
+<script src="{% static 'builder_app/complete_on_site.js' %}"></script>
+<script src="{% static 'builder_app/hc_claim.js' %}"></script>
+
+
 
 {% endblock %}
