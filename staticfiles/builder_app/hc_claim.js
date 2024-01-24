@@ -114,14 +114,14 @@ function showHcClaimModal(costingsX) {
             document.getElementById('totalOutput').textContent = totalOutput.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
         });
     });
-    document.getElementById('saveButton').addEventListener('click', function() {
-        var data = gatherData();
-        postData('/contract_admin/commit_hc_claim/', { data: data })
-        .then(data => console.log(data))
-        .catch((error) => {
-            console.error('Error:', error);
-        });
-    });
+    // document.getElementById('saveButton').addEventListener('click', function() {
+    //     var data = gatherData();
+    //     postData('/contract_admin/commit_hc_claim/', { data: data })
+    //     .then(data => console.log(data))
+    //     .catch((error) => {
+    //         console.error('Error:', error);
+    //     });
+    // });
 }
 
 //make the super array
@@ -145,17 +145,17 @@ $(document).on('click', '#hcMakeClaim', function(){
     showHcClaimModal(costingsX);
 });
 
-var data = gatherData();
-// Check if data is valid
-if (data.someField === "" || isNaN(Number(data.someField))) {
-    console.error('Invalid data:', data);
-} else {
-    postData('/contract_admin/commit_hc_claim/', { data: data })
-    .then(data => console.log(data))
-    .catch((error) => {
-        console.error('Error:', error);
-    });
-}
+// var data = gatherData();
+// // Check if data is valid
+// if (data.someField === "" || isNaN(Number(data.someField))) {
+//     console.error('Invalid data:', data);
+// } else {
+//     postData('/contract_admin/commit_hc_claim/', { data: data })
+//     .then(data => console.log(data))
+//     .catch((error) => {
+//         console.error('Error:', error);
+//     });
+// }
 
 function postData(url = '', data = {}) {
     return fetch(url, {

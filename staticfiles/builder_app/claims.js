@@ -271,8 +271,6 @@ function allocateClaimModal(pdfFilename, quote_id, supplier, totalCost, allocati
 
 }
 
-
-
     // var totalCostInput = document.getElementById('totalCost');
     // Add event listener to the 'total cost' input field
     // totalCostInput.addEventListener('input', update_still_to_allocate_value);
@@ -282,7 +280,6 @@ function allocateClaimModal(pdfFilename, quote_id, supplier, totalCost, allocati
 function gatherAllocationsData() {
     // Get all rows in the table except for the last one
     var rows = Array.from(document.querySelectorAll('#lineItemsTable tr:not(:last-child)'));
-    
     // Map the rows to objects containing the item, amount
     var allocations = rows.map(function(row) {
         var cells = row.querySelectorAll('td');
@@ -292,7 +289,6 @@ function gatherAllocationsData() {
         var associated_quote = cells[2].querySelector('.quoteValue').value;
         return { item: item, amount: amount, associated_quote: associated_quote };
     }).filter(Boolean);  // This will remove null values from the array
-
     // Calculate the total allocated amount
     var totalAllocated = allocations.reduce(function(total, allocation) {
         return total + allocation.amount;
