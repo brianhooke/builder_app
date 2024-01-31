@@ -35,6 +35,7 @@ class Committed_allocations(models.Model):
     quote = models.ForeignKey(Committed_quotes, on_delete=models.CASCADE)
     item = models.CharField(max_length=100)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
+    description = models.CharField(max_length=100, null=True)
     def clean(self):
         # Check if the item exists in Costing
         if not Costing.objects.filter(item=self.item).exists():
@@ -43,7 +44,7 @@ class Committed_allocations(models.Model):
         self.clean()
         super(Committed_allocations, self).save(*args, **kwargs)
     def __str__(self):
-        return f"Quote: {self.quote}, Item: {self.item}, Amount: {self.amount}"
+        return f"Quote: {self.quote}, Item: {self.item}, Amount: {self.amount}, Description: {self.description}"
     
 class Claims(models.Model):
     claim = models.AutoField(primary_key=True)

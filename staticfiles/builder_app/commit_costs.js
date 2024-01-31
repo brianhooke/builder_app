@@ -50,10 +50,11 @@ function displayCombinedModal(pdfFilename, quote_id, supplier, totalCost, alloca
             <table id="lineItemsTable" style="table-layout: fixed;">
             <thead>
                 <tr>
-                    <th rowspan="2" style="width: 22%;">Item</th>
-                    <th colspan="2" style="width: 26%;">Uncommitted</th>
-                    <th colspan="2" style="width: 26%;">Committed</th>
-                    <th rowspan="2" style="width: 21%;">Total</th>
+                    <th rowspan="2" style="width: 19%;">Item</th>
+                    <th colspan="2" style="width: 19%;">Uncommitted</th>
+                    <th colspan="2" style="width: 19%;">Committed</th>
+                    <th rowspan="2" style="width: 19%;">Total</th>
+                    <th rowspan="2" style="width: 19%;">Description</th>
                     <th rowspan="2" class="delete-cell-header" style="width: 5%;"></th>
                 </tr>
                 <tr>
@@ -66,7 +67,7 @@ function displayCombinedModal(pdfFilename, quote_id, supplier, totalCost, alloca
             <tbody>
                 <!-- Rows will be added here -->
                 <tr id="stillToAllocateRow">
-                    <td colspan="5">Still to Allocate</td>
+                    <td colspan="6">Still to Allocate</td>
                     <td id="stillToAllocateValue">0.00</td>
                 </tr>
             </tbody>
@@ -131,11 +132,16 @@ function gatherData() {
             var amountInput = row.cells[4].querySelector('input');
             var amount = amountInput ? amountInput.value : '';
             var uncommittedInput = row.cells[2].querySelector('input');
-            var uncommitted = uncommittedInput ? uncommittedInput.value : '';            
+            var uncommitted = uncommittedInput ? uncommittedInput.value : '';
+            var descriptionInput = row.cells[6].querySelector('input');   
+            var description = descriptionInput ? descriptionInput.value : '';
+            console.log("here comes the description");
+            console.log(description);
             return {
                 item: selectElement.value,
                 amount: amount,
-                uncommitted: uncommitted // Include the uncommitted value in the allocation
+                uncommitted: uncommitted, // Include the uncommitted value in the allocation
+                description: description
             };
         } else {
             return null;
@@ -213,7 +219,7 @@ function addLineItem(item, amount) {
     var firstCell = newRow.insertCell(0);
     firstCell.appendChild(select);
     // Create the remaining cells
-    for (var i = 1; i < 7; i++) {
+    for (var i = 1; i < 8; i++) {
         var newCell = newRow.insertCell(i);
         if (i === 2 || i === 4) {
             var input = document.createElement('input');
@@ -223,12 +229,18 @@ function addLineItem(item, amount) {
             newCell.appendChild(input);
             // Add an event listener to the input field
             input.addEventListener('input', updateStillToAllocateValue);
+        } else if (i === 6) {
+            var input = document.createElement('input');
+            input.type = 'text';
+            input.maxLength = 100;
+            input.style.width = '100%';
+            newCell.appendChild(input);
         } else {
             newCell.innerHTML = '0';  // Default to 0
         }
     }
     // Create a cell for the delete button
-    var deleteCell = newRow.insertCell(6);
+    var deleteCell = newRow.insertCell(7);
     deleteCell.className = 'delete-cell';  // Add a CSS class to the cell
     var deleteButton = document.createElement('button');
     deleteButton.textContent = 'x';

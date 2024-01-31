@@ -202,7 +202,6 @@ def update_complete_on_site(request):
 def commit_data(request):
     if request.method == 'POST':
         data = json.loads(request.body)
-        data = json.loads(request.body)
         total_cost = data['total_cost']
         pdf_data = data['pdf']
         supplier = data['supplier']
@@ -213,9 +212,10 @@ def commit_data(request):
         quote = Committed_quotes.objects.create(total_cost=total_cost, pdf=data, supplier=supplier)  # Add supplier here
         for item in allocations:
             amount = item['amount']
+            description = item.get('description', '')  # Get the description, default to '' if not present
             if amount == '':
                 amount = '0'
-            Committed_allocations.objects.create(quote=quote, item=item['item'], amount=amount)
+            Committed_allocations.objects.create(quote=quote, item=item['item'], amount=amount, description=description)  # Include description here
             # Update the Costing.uncommitted field
             uncommitted = item['uncommitted']
             Costing.objects.filter(item=item['item']).update(uncommitted=uncommitted)
