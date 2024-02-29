@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import update_costs, commit_data, commit_claim_data, update_costs, update_complete_on_site, delete_quote, update_quote
+from .views import update_costs, commit_data, commit_claim_data, update_costs, update_complete_on_site, delete_quote, update_quote, login
 from . import views
 from django.conf import settings
 from django.conf.urls.static import static
@@ -16,7 +16,8 @@ urlpatterns = [
     path('delete_quote/', views.delete_quote, name='delete_quote'),
     path('update_quote/', views.update_quote, name='update_quote'),
     path('commit_claim_data/', views.commit_claim_data, name='commit_claim_data'),        
-    path('commit_hc_claim/', views.commit_hc_claim, name='commit_hc_claim'),        
+    path('commit_hc_claim/', views.commit_hc_claim, name='commit_hc_claim'),    
+    path('login/', views.login, name='login'),            
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 if settings.DEBUG:

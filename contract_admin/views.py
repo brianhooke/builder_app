@@ -19,6 +19,98 @@ from django.conf import settings
 from django.shortcuts import get_object_or_404
 from decimal import Decimal
 
+# OATH XERO INCLUDES
+import os
+from functools import wraps
+from django.urls import reverse
+from django.shortcuts import redirect
+from xero_python.api_client import ApiClient, serialize
+from xero_python.api_client.configuration import Configuration
+from xero_python.api_client.oauth2 import OAuth2Token
+from requests_oauthlib import OAuth2Session
+from authlib.integrations.django_client import OAuth, token_update
+from django.core.cache import cache
+from django.dispatch import receiver
+
+os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
+oauth = OAuth()
+xero = oauth.register(
+    name="xero",
+    version="2",
+    client_id=os.environ["CLIENT_ID"],
+    client_secret=os.environ["CLIENT_SECRET"],
+    endpoint_url="https://api.xero.com/",
+    authorization_url="https://login.xero.com/identity/connect/authorize",
+    access_token_url="https://identity.xero.com/connect/token",
+    refresh_token_url="https://identity.xero.com/connect/token",
+    scope="offline_access openid profile email accounting.transactions "
+    "accounting.transactions.read accounting.reports.read "
+    "accounting.journals.read accounting.settings accounting.settings.read "
+    "accounting.contacts accounting.contacts.read accounting.attachments "
+    "accounting.attachments.read assets projects"
+)
+
+api_client = ApiClient(
+    Configuration(
+        debug=True,  # app.config["DEBUG"],
+        oauth2_token=OAuth2Token(
+            client_id="client_id", client_secret="client_secret"
+        ),
+    ),
+    pool_threads=1,
+)
+
+def login(request):
+    redirect_uri = request.build_absolute_uri('authorise/')
+    return oauth.xero.authorize_redirect(request, redirect_uri)
+
+def oauth_callback(request):
+    try:
+        token = oauth.xero.authorize_access_token(request)
+    except Exception as e:
+        print(e)
+        raise
+    if token is None:
+        return HttpResponse("Access Denied")
+    store_xero_oauth2_token(token)
+
+    return redirect('/backend/tenants/')
+
+
+def logout():
+    store_xero_oauth2_token(None)
+    return redirect('/')
+
+
+def xero_token_required(function):
+    @wraps(function)
+    def decorator(*args, **kwargs):
+        xero_token = obtain_xero_oauth2_token()
+        time = datetime.datetime.now().timestamp()
+        if time > xero_token['expires_at']:
+            new_token = oauth.xero.fetch_access_token(
+                refresh_token=xero_token['refresh_token'],
+                grant_type='refresh_token')
+            store_xero_oauth2_token(new_token)
+            xero_token = new_token
+
+        if not xero_token:
+            return redirect(reverse("oauth"))
+
+        return function(*args, **kwargs)
+
+    return decorator
+
+@api_client.oauth2_token_getter
+def obtain_xero_oauth2_token():
+    return cache.get('token')
+
+
+@api_client.oauth2_token_saver
+def store_xero_oauth2_token(token):
+    cache.set('token', token, None)
+
+
 # Create a logger
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -312,3 +404,4 @@ def commit_hc_claim(request):
                 )
         return JsonResponse({'hc_claim': hc_claim.hc_claim}, status=201)
     return JsonResponse({'error': 'Invalid request'}, status=400)
+
