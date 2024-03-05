@@ -117,8 +117,9 @@ function gatherData() {
         cellValue = isNaN(cellValue) ? 0 : cellValue;
         allocated += cellValue;
     }
+    allocated = parseFloat(allocated.toFixed(2));
     if (totalCost !== allocated) {
-        alert('Total Cost does not equal Total Allocated');
+        alert('Total Cost does not equal Total Allocated where allocated cost is ' + allocated + ' and total cost is ' + totalCost + '.');
         return null;
     }
     if (supplier === '') {
