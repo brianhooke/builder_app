@@ -18,6 +18,11 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+function updateHiddenInput(selectElement) {
+    var selectedOption = selectElement.options[selectElement.selectedIndex];
+    document.getElementById('supplierId').value = selectedOption.value;
+}
+
 function displayCombinedModal(pdfFilename, quote_id, supplier, totalCost, allocations, updating = false) {
     var pdfUrl;
     if (arguments.length === 1) {
@@ -31,6 +36,27 @@ function displayCombinedModal(pdfFilename, quote_id, supplier, totalCost, alloca
         // If four arguments are passed, it's pdfFilename, supplier, totalCost, allocations
         pdfUrl = '/media/' + pdfFilename.replace('pdfs/', '');
     }
+    // Generate options for the supplier dropdown list
+    console.log("here are contacts");  // Log the pdfUrl variable
+    console.log(contacts);  // Log the contacts variable
+    var selectableContacts = contacts.filter(function(contact) {
+        return contact.contact_selectable === true;
+    });
+    console.log("here are selectable contacts");  // Log the pdfUrl variable
+    console.log(selectableContacts);  // Log the selectableContacts variable
+    var options = selectableContacts.map(function(contact) {
+        return `<option value="${contact.contact_id}">${contact.contact_name}</option>`;
+    }).join('');
+    console.log(options);  // Log the options variable
+
+    var selectHTML = `
+    <select id="supplier" onchange="updateHiddenInput(this)">
+        ${options}
+    </select>
+    <input type="hidden" id="supplierId" name="supplierId">
+    `;
+
+
     var combinedModalHTML = `
         <div id="combinedModal" style="display: flex;">
         <div class="pdf-viewer" style="width: 40%;">
@@ -40,7 +66,7 @@ function displayCombinedModal(pdfFilename, quote_id, supplier, totalCost, alloca
             <h2>Commit Costs</h2>
             <div class="input-field">
                 <label for="supplier">Supplier:</label>
-                <input type="text" id="supplier" maxlength="100" placeholder="" value="${supplier}">
+                ${selectHTML}
             </div>
             <div class="input-field">
                 <label for="totalCost">Total Cost:</label>
@@ -109,7 +135,7 @@ function gatherData() {
     var totalCost = parseFloat(document.getElementById('totalCost').value);
     totalCost = isNaN(totalCost) ? 0 : totalCost;
     var allocated = 0;
-    var supplier = document.getElementById('supplier').value;
+    var supplierId = document.getElementById('supplierId').value;
     var tableBody = document.getElementById('lineItemsTable').tBodies[0];
     for (var i = 0; i < tableBody.rows.length - 1; i++) {
         var cellValue = parseFloat(tableBody.rows[i].cells[4].firstChild.value.replace(/,/g, ''));
@@ -120,7 +146,7 @@ function gatherData() {
         alert('Total Cost does not equal Total Allocated');
         return null;
     }
-    if (supplier === '') {
+    if (supplierId === '') {
         alert('Need to input Supplier Name');
         return null;
     }
@@ -145,7 +171,7 @@ function gatherData() {
     });
     var data = {
         total_cost: totalCost,
-        supplier: supplier,
+        supplierId: supplierId,
         allocations: allocations
     };
     if (quote_id) {

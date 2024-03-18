@@ -1,7 +1,7 @@
 import csv
 from django.shortcuts import render
 from .forms import CSVUploadForm
-from .models import Costing, Categories, Committed_quotes, Committed_allocations, Claims, Claim_allocations, Hc_claims, Hc_claim_lines
+from .models import Costing, Categories, Committed_quotes, Committed_allocations, Claims, Claim_allocations, Hc_claims, Hc_claim_lines, Contacts3
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.template import loader
@@ -37,6 +37,8 @@ def contract_admin(request):
     for costing in costings:
         category = Categories.objects.get(pk=costing['category'])
         costing['category'] = category.category
+    contacts = Contacts3.objects.values()
+    contacts_list = list(contacts)
     committed_allocations = Committed_allocations.objects.all()
     # Calculate the sums for each item
     committed_allocations_sums = Committed_allocations.objects.values('item').annotate(total_amount=Sum('amount'))
@@ -90,6 +92,7 @@ def contract_admin(request):
     context = {
         'form': form,
         'costings': costings,
+        'contacts': contacts_list,  # Add contacts to context
         'items': items,  # Add items to context
         'totals': totals,
         'committed_quotes': committed_quotes_json,
@@ -204,12 +207,12 @@ def commit_data(request):
         data = json.loads(request.body)
         total_cost = data['total_cost']
         pdf_data = data['pdf']
-        supplier = data['supplier']
+        supplierId = data['supplierId']
         allocations = data.get('allocations')
         format, imgstr = pdf_data.split(';base64,')
         ext = format.split('/')[-1]
         data = ContentFile(base64.b64decode(imgstr), name='temp.' + ext)
-        quote = Committed_quotes.objects.create(total_cost=total_cost, pdf=data, supplier=supplier)  # Add supplier here
+        quote = Committed_quotes.objects.create(total_cost=total_cost, pdf=data, supplierId=supplierId)  # Add supplier ID here
         for item in allocations:
             amount = item['amount']
             description = item.get('description', '')  # Get the description, default to '' if not present

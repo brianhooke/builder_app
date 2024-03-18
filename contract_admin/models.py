@@ -1,12 +1,19 @@
 from django.db import models
 from django.core.exceptions import ValidationError
-
+import uuid
 
 class Categories(models.Model):
     category = models.CharField(max_length=100)
     order_in_list = models.DecimalField(max_digits=10, decimal_places=0)
     def __str__(self):
         return self.category
+
+class Contacts3(models.Model):
+    contact_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    contact_name = models.CharField(max_length=200)
+    contact_selectable = models.BooleanField(default=True)
+    def __str__(self):
+        return self.contact_name
 
 class Costing(models.Model):
     id = models.AutoField(primary_key=True)
@@ -26,10 +33,10 @@ class Costing(models.Model):
 class Committed_quotes(models.Model):
     quote = models.AutoField(primary_key=True)
     total_cost = models.DecimalField(max_digits=10, decimal_places=2)
-    supplier = models.CharField(max_length=100)
+    supplierId = models.CharField(max_length=100)
     pdf = models.FileField(upload_to='')
     def __str__(self):
-        return f"Quote: {self.quote}, Total Cost: {self.total_cost}, Supplier: {self.supplier}, PDF: {self.pdf}"
+        return f"Quote: {self.quote}, Total Cost: {self.total_cost}, SupplierID: {self.supplierId}, PDF: {self.pdf}"
         
 class Committed_allocations(models.Model):
     quote = models.ForeignKey(Committed_quotes, on_delete=models.CASCADE)

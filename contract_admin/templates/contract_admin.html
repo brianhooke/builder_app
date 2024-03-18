@@ -15,6 +15,7 @@
 <div>
   <button id="commitCostsBtn" class="gradient-button">Commit Costs</button>
 </div>
+<input type="file" id="pdfInput" style="opacity: 0; position: absolute; left: -9999px;">
 
 <div>
   <button id="committedQuotesBtn" class="gradient-button">Committed Costs</button>
@@ -196,8 +197,10 @@
 {{ committed_quotes|json_script:"committed-quotes-data" }}
 {{ committed_allocations|json_script:"committed-allocations-data" }}
 {{ costings|json_script:"costings" }}
+{{ contacts|json_script:"contacts" }}
 {{ hc_claim_lines_sums|json_script:"hc_claim_lines_sums" }}
 {{ hc_claimed|json_script:"hc_claimed" }}
+
 
 
 <script>
@@ -288,6 +291,7 @@ $('.save-costs').click(function() {
   var costings = JSON.parse(document.getElementById('costings').textContent);
   var hc_claim_lines_sums = JSON.parse(document.getElementById('hc_claim_lines_sums').textContent);
   var hc_claimed = JSON.parse(document.getElementById('hc_claimed').textContent);
+  var contacts = JSON.parse(document.getElementById('contacts').textContent);
   // var costings = {{ costings|escapejs|safe }};
 </script>
 
@@ -300,18 +304,6 @@ for (var item_id in hc_claim_lines_sums) {
         cell.textContent = amount.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 }
-// console.log("Here comes the data type:");
-// console.log(typeof hc_claimed);
-// console.log("Here comes the hc_claim_lines_sums:");
-// for (var item_id in hc_claim_lines_sums) {
-//     console.log("Item ID: " + item_id + ", Total Amount: " + hc_claim_lines_sums[item_id]);
-// }
-// console.log("Here comes the neighbourhood:");
-// console.log("Here comes the costings:");
-// for (var i = 0; i < costings.length; i++) {
-//     console.log("ID: " + costings[i].id + ", HC Claimed Amount: " + costings[i].hc_claimed_amount);
-// }
-// console.log("There goes the costings");
 
 // Create a new div element
 var newDiv = document.createElement("div");
@@ -436,6 +428,8 @@ function populateModal(quoteNumber) {
 <script src="{% static 'builder_app/claims.js' %}"></script>
 <script src="{% static 'builder_app/complete_on_site.js' %}"></script>
 <script src="{% static 'builder_app/hc_claim.js' %}"></script>
+<script src="{% static 'builder_app/contacts.js' %}"></script>
+
 
 
 
