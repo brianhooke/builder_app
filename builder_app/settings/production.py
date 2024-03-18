@@ -2,7 +2,7 @@
 import os
 from .base import *
 
-DEBUG = True
+DEBUG = False
 
 # AWS S3 Settings
 AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
