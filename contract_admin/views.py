@@ -18,6 +18,9 @@ import logging
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 from decimal import Decimal
+import io  # Add this line
+from uuid import UUID
+
 
 # Create a logger
 logging.basicConfig(level=logging.INFO)
@@ -315,3 +318,20 @@ def commit_hc_claim(request):
                 )
         return JsonResponse({'hc_claim': hc_claim.hc_claim}, status=201)
     return JsonResponse({'error': 'Invalid request'}, status=400)
+
+@csrf_exempt
+def upload_contacts(request):
+    if request.method == 'POST' and request.FILES['file']:
+        csv_file = request.FILES['file']
+        data_set = csv_file.read().decode('UTF-8')
+        io_string = io.StringIO(data_set)
+        next(io_string)  # Skip the header
+        for column in csv.reader(io_string, delimiter=',', quotechar="|"):
+            _, created = Contacts3.objects.update_or_create(
+                contact_id=UUID(column[0]),
+                contact_name=column[1],
+                contact_selectable=True
+            )
+        return JsonResponse({'message': 'CSV file processed.'})
+    else:
+        return JsonResponse({'message': 'Invalid request.'})

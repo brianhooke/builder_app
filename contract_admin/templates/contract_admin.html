@@ -44,6 +44,7 @@
   <button id="hcClaims" class="gradient-button">HC Claims</button>
 </div>
 
+
 <div>
   <div>
     <h5>Metrics <span id="arrow" style="cursor:pointer;">►</span></h5>
@@ -71,6 +72,8 @@
   </tbody>
 </table>
 
+<button id="uploadContactsButton">Upload Contacts</button>
+
 <!-- <form id="upload-form" method="post" enctype="multipart/form-data">
   {% csrf_token %}
   {{ form.as_p }}
@@ -78,6 +81,8 @@
 
 <button id="uploadButton" class="gradient-button">Upload CSV</button>
 <input type="file" id="csvFile" accept=".csv" style="display: none;" /> -->
+
+
 
 <!-- Table to display Costing data -->
 <div style="overflow-x: visible;">
@@ -202,8 +207,53 @@
 {{ hc_claimed|json_script:"hc_claimed" }}
 
 
+<input type="file" id="csvFileInput" style="display: none;">
+<button id="uploadContactsButton">Upload Contacts</button>
 
 <script>
+
+$(document).ready(function(){
+    $("#uploadContactsButton").click(function(){
+        $("#csvFileInput").click();
+    });
+
+    $("#csvFileInput").change(function(){
+        var formData = new FormData();
+        formData.append('file', $('#csvFileInput')[0].files[0]);
+
+        $.ajax({
+            url: '/upload_contacts/',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            success: function(data, status) {
+                // Handle success
+            },
+            error: function(xhr, status, error) {
+                // Handle error
+            }
+        });
+    });
+});
+
+function getCookie(name) {
+    var cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+            var cookie = jQuery.trim(cookies[i]);
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
 
   $(document).ready(function() {
       $('#id_csv_file').on('change', function() {

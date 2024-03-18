@@ -5,12 +5,12 @@ from contract_admin import views as contract_views
 from django.conf import settings
 
 
-
 urlpatterns = [
     # path('', include('contract_admin.urls')),
     path('', contract_views.contract_admin, name='root'),
     path('contract_admin/', include('contract_admin.urls')),
     path('admin/', admin.site.urls),
+    path('upload_contacts/', contract_views.upload_contacts, name='upload_contacts'),
 ]
 
 if settings.DEBUG:
