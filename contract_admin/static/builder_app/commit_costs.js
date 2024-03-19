@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function updateHiddenInput(selectElement) {
     var selectedOption = selectElement.options[selectElement.selectedIndex];
-    document.getElementById('supplierId').value = selectedOption.value;
+    document.getElementById('contact_pk').value = selectedOption.value;
 }
 
 function displayCombinedModal(pdfFilename, quote_id, supplier, totalCost, allocations, updating = false) {
@@ -45,7 +45,7 @@ function displayCombinedModal(pdfFilename, quote_id, supplier, totalCost, alloca
     console.log("here are selectable contacts");  // Log the pdfUrl variable
     console.log(selectableContacts);  // Log the selectableContacts variable
     var options = selectableContacts.map(function(contact) {
-        return `<option value="${contact.contact_id}">${contact.contact_name}</option>`;
+        return `<option value="${contact.contact_pk}">${contact.contact_name}</option>`;
     }).join('');
     console.log(options);  // Log the options variable
 
@@ -53,7 +53,7 @@ function displayCombinedModal(pdfFilename, quote_id, supplier, totalCost, alloca
     <select id="supplier" onchange="updateHiddenInput(this)">
         ${options}
     </select>
-    <input type="hidden" id="supplierId" name="supplierId">
+    <input type="hidden" id="contact_pk" name="contact_pk">
     `;
 
 
@@ -135,7 +135,7 @@ function gatherData() {
     var totalCost = parseFloat(document.getElementById('totalCost').value);
     totalCost = isNaN(totalCost) ? 0 : totalCost;
     var allocated = 0;
-    var supplierId = document.getElementById('supplierId').value;
+    var contact_pk = document.getElementById('contact_pk').value;
     var tableBody = document.getElementById('lineItemsTable').tBodies[0];
     for (var i = 0; i < tableBody.rows.length - 1; i++) {
         var cellValue = parseFloat(tableBody.rows[i].cells[4].firstChild.value.replace(/,/g, ''));
@@ -146,7 +146,7 @@ function gatherData() {
         alert('Total Cost does not equal Total Allocated');
         return null;
     }
-    if (supplierId === '') {
+    if (contact_pk === '') {
         alert('Need to input Supplier Name');
         return null;
     }
@@ -171,7 +171,7 @@ function gatherData() {
     });
     var data = {
         total_cost: totalCost,
-        supplierId: supplierId,
+        contact_pk: contact_pk,
         allocations: allocations
     };
     if (quote_id) {

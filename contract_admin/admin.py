@@ -1,17 +1,17 @@
 from django.contrib import admin
-from .models import Categories, Costing, Committed_quotes, Committed_allocations, Claims, Claim_allocations, Hc_claims, Hc_claim_lines, Contacts3
+from .models import Categories, Costing, Committed_quotes, Committed_allocations, Claims, Claim_allocations, Hc_claims, Hc_claim_lines, Contacts
 
 class CategoriesAdmin(admin.ModelAdmin):
     list_display = ("category", "order_in_list")
 
-class Contacts3Admin(admin.ModelAdmin):
-    list_display = ("contact_id", "contact_name", "contact_selectable")
+class ContactsAdmin(admin.ModelAdmin):
+    list_display = ("contact_pk", "contact_id", "contact_name", "contact_selectable")
 
 class CostingAdmin(admin.ModelAdmin):
     list_display = ("id", "category", "item", "contract_budget", "uncommitted", "complete_on_site", "hc_next_claim", "hc_received", "sc_invoiced", "sc_paid", "notes")
 
 class Committed_quotesAdmin(admin.ModelAdmin):
-    list_display = ("quote", "total_cost", "supplierId", "pdf")
+    list_display = ("quote", "total_cost", "pdf", "contact_pk")
 
 class Committed_allocationsAdmin(admin.ModelAdmin):
     list_display = ("quote", "item", "amount", "description")
@@ -40,4 +40,4 @@ admin.site.register(Claims, ClaimsAdmin)
 admin.site.register(Claim_allocations, Claim_allocationsAdmin)
 admin.site.register(Hc_claim_lines, HcClaimLinesAdmin)
 admin.site.register(Hc_claims, Hc_claimsAdmin)
-admin.site.register(Contacts3, Contacts3Admin)
+admin.site.register(Contacts, ContactsAdmin)

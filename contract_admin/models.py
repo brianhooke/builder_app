@@ -8,12 +8,21 @@ class Categories(models.Model):
     def __str__(self):
         return self.category
 
-class Contacts3(models.Model):
-    contact_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+# class Contacts3(models.Model):
+#     contact_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+#     contact_name = models.CharField(max_length=200)
+#     contact_selectable = models.BooleanField(default=True)
+#     def __str__(self):
+#         return self.contact_name
+    
+class Contacts(models.Model):
+    contact_pk = models.AutoField(primary_key=True)
+    contact_id = models.CharField(max_length=36, default=uuid.uuid4, editable=False)
     contact_name = models.CharField(max_length=200)
     contact_selectable = models.BooleanField(default=True)
     def __str__(self):
         return self.contact_name
+    
 
 class Costing(models.Model):
     id = models.AutoField(primary_key=True)
@@ -33,11 +42,11 @@ class Costing(models.Model):
 class Committed_quotes(models.Model):
     quote = models.AutoField(primary_key=True)
     total_cost = models.DecimalField(max_digits=10, decimal_places=2)
-    supplierId = models.CharField(max_length=100)
     pdf = models.FileField(upload_to='')
+    contact_pk = models.ForeignKey('Contacts', on_delete=models.CASCADE)
     def __str__(self):
-        return f"Quote: {self.quote}, Total Cost: {self.total_cost}, SupplierID: {self.supplierId}, PDF: {self.pdf}"
-        
+        return f"Quote: {self.quote}, Total Cost: {self.total_cost}, Contact PK: {self.contact_pk}, PDF: {self.pdf}"
+            
 class Committed_allocations(models.Model):
     quote = models.ForeignKey(Committed_quotes, on_delete=models.CASCADE)
     item = models.CharField(max_length=100)

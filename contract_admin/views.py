@@ -1,7 +1,7 @@
 import csv
 from django.shortcuts import render
 from .forms import CSVUploadForm
-from .models import Costing, Categories, Committed_quotes, Committed_allocations, Claims, Claim_allocations, Hc_claims, Hc_claim_lines, Contacts3
+from .models import Costing, Categories, Committed_quotes, Committed_allocations, Claims, Claim_allocations, Hc_claims, Hc_claim_lines, Contacts
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.template import loader
@@ -20,6 +20,8 @@ from django.shortcuts import get_object_or_404
 from decimal import Decimal
 import io  # Add this line
 from uuid import UUID
+from django.shortcuts import get_object_or_404
+
 
 
 # Create a logger
@@ -40,7 +42,7 @@ def contract_admin(request):
     for costing in costings:
         category = Categories.objects.get(pk=costing['category'])
         costing['category'] = category.category
-    contacts = Contacts3.objects.values()
+    contacts = Contacts.objects.values()
     contacts_list = list(contacts)
     committed_allocations = Committed_allocations.objects.all()
     # Calculate the sums for each item
@@ -210,12 +212,15 @@ def commit_data(request):
         data = json.loads(request.body)
         total_cost = data['total_cost']
         pdf_data = data['pdf']
-        supplierId = data['supplierId']
+        contact_pk = data['contact_pk']
         allocations = data.get('allocations')
         format, imgstr = pdf_data.split(';base64,')
         ext = format.split('/')[-1]
         data = ContentFile(base64.b64decode(imgstr), name='temp.' + ext)
-        quote = Committed_quotes.objects.create(total_cost=total_cost, pdf=data, supplierId=supplierId)  # Add supplier ID here
+
+        contact = get_object_or_404(Contacts, pk=contact_pk)
+        quote = Committed_quotes.objects.create(total_cost=total_cost, pdf=data, contact_pk=contact)
+
         for item in allocations:
             amount = item['amount']
             description = item.get('description', '')  # Get the description, default to '' if not present
@@ -327,7 +332,7 @@ def upload_contacts(request):
         io_string = io.StringIO(data_set)
         next(io_string)  # Skip the header
         for column in csv.reader(io_string, delimiter=',', quotechar="|"):
-            _, created = Contacts3.objects.update_or_create(
+            _, created = Contacts.objects.update_or_create(
                 contact_id=UUID(column[0]),
                 contact_name=column[1],
                 contact_selectable=True
