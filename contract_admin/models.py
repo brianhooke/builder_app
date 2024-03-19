@@ -42,7 +42,7 @@ class Costing(models.Model):
 class Committed_quotes(models.Model):
     quote = models.AutoField(primary_key=True)
     total_cost = models.DecimalField(max_digits=10, decimal_places=2)
-    pdf = models.FileField(upload_to='')
+    pdf = models.FileField(upload_to='pdfs/')
     contact_pk = models.ForeignKey('Contacts', on_delete=models.CASCADE)
     def __str__(self):
         return f"Quote: {self.quote}, Total Cost: {self.total_cost}, Contact PK: {self.contact_pk}, PDF: {self.pdf}"
