@@ -216,8 +216,10 @@ def commit_data(request):
         allocations = data.get('allocations')
         format, imgstr = pdf_data.split(';base64,')
         ext = format.split('/')[-1]
-        data = ContentFile(base64.b64decode(imgstr), name='temp.' + ext)
         contact = get_object_or_404(Contacts, pk=contact_pk)
+        supplier = contact.contact_name
+        unique_filename = supplier + " " + str(uuid.uuid4()) + '.' + ext
+        data = ContentFile(base64.b64decode(imgstr), name=unique_filename)
         quote = Committed_quotes.objects.create(total_cost=total_cost, pdf=data, contact_pk=contact)
         for item in allocations:
             amount = item['amount']
