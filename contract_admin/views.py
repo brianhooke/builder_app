@@ -35,7 +35,7 @@ class DecimalEncoder(json.JSONEncoder):
         return super(DecimalEncoder, self).default(obj)
 
 def contract_admin(request):
-    print(settings.MEDIA_ROOT)
+    print("media root is: ", settings.MEDIA_ROOT)
     form = CSVUploadForm()  # Instantiate your form 
     costings = Costing.objects.all().order_by('category__order_in_list', 'category__category', 'item')    # Convert each 'costing' object to a dictionary and add 'committed'
     costings = [model_to_dict(costing) for costing in costings]
