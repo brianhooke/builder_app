@@ -6,6 +6,7 @@ DEBUG = False
 
 # AWS S3 Settings
 AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
+AWS_DEFAULT_ACL = None
 AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
 AWS_STORAGE_BUCKET_NAME = 'builderappbucket' #Media_root is this + location in storage backends
 AWS_S3_CUSTOM_DOMAIN = f'builderappbucket.s3.amazonaws.com'
