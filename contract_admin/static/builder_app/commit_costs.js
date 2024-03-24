@@ -37,7 +37,7 @@ function displayCombinedModal(pdfFilename, quote_id, supplier, contact_pk, total
         allocations = [];
     } else {
         // If four arguments are passed, it's pdfFilename, supplier, totalCost, allocations
-        pdfUrl = '/media/' + pdfFilename;
+        pdfUrl = pdfFilename;
     }
     // Generate options for the supplier dropdown list
     var selectableContacts = contacts.filter(function(contact) {

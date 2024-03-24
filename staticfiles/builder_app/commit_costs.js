@@ -29,7 +29,7 @@ function displayCombinedModal(pdfFilename, quote_id, supplier, totalCost, alloca
         allocations = [];
     } else {
         // If four arguments are passed, it's pdfFilename, supplier, totalCost, allocations
-        pdfUrl = '/media/' + pdfFilename.replace('pdfs/', '');
+        pdfUrl = pdfFilename.replace('pdfs/', '');
     }
     var combinedModalHTML = `
         <div id="combinedModal" style="display: flex;">
