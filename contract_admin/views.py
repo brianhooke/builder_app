@@ -66,9 +66,9 @@ def contract_admin(request):
         costing['hc_claimed'] = hc_claimed_amount or 0
     items = [{'item': costing['item'], 'uncommitted': costing['uncommitted'], 'committed': costing['committed']} for costing in costings]
     # Retrieve all Committed_quotes and Committed_allocations objects
-    committed_quotes = Committed_quotes.objects.all()
+    committed_quotes = Committed_quotes.objects.all().values('quote', 'total_cost', 'pdf', 'contact_pk', 'contact_pk__contact_name')
     logger.info(committed_quotes)
-    committed_quotes_json = serializers.serialize('json', committed_quotes)
+    committed_quotes_json = json.dumps(list(committed_quotes), default=str)
     committed_allocations_json = serializers.serialize('json', committed_allocations)
     # Retrieve all Claims and Claim_allocations objects
     claims = Claims.objects.all()
@@ -223,10 +223,10 @@ def commit_data(request):
         quote = Committed_quotes.objects.create(total_cost=total_cost, pdf=data, contact_pk=contact)
         for item in allocations:
             amount = item['amount']
-            description = item.get('description', '')  # Get the description, default to '' if not present
+            notes = item.get('notes', '')  # Get the notes, default to '' if not present
             if amount == '':
                 amount = '0'
-            Committed_allocations.objects.create(quote=quote, item=item['item'], amount=amount, description=description)  # Include description here
+            Committed_allocations.objects.create(quote=quote, item=item['item'], amount=amount, notes=notes)
             # Update the Costing.uncommitted field
             uncommitted = item['uncommitted']
             Costing.objects.filter(item=item['item']).update(uncommitted=uncommitted)
@@ -280,7 +280,8 @@ def update_quote(request):
         Committed_allocations.objects.filter(quote_id=quote_id).delete()
         # Save the new allocations
         for allocation in allocations:
-            alloc = Committed_allocations(quote_id=quote_id, item=allocation['item'], amount=allocation['amount'])
+            notes = allocation.get('notes', '')  # Get the notes, default to '' if not present
+            alloc = Committed_allocations(quote_id=quote_id, item=allocation['item'], amount=allocation['amount'], notes=notes)  # Include the notes when creating the allocation
             alloc.save()
             # Update the Costing.uncommitted field
             uncommitted = allocation['uncommitted']

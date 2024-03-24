@@ -30,9 +30,21 @@ document.addEventListener('DOMContentLoaded', function() {
     // Get the modal
     var myModal = document.getElementById("myModal");
 
-    // Show the modal when the button is clicked
-    document.getElementById("committedClaimBtn").addEventListener('click', function() {
-        myModal.style.display = "block";
+    // document.getElementById('newClaimBtn').addEventListener('click', function() {
+    //     document.getElementById('newClaimPdfInput').click();
+    // });
+
+    // document.getElementById("committedClaimBtn").addEventListener('click', function() {
+    //     myModal.style.display = "block";
+    // });
+
+    document.getElementById('dropdown').addEventListener('change', function() {
+        if (this.value === 'newClaim') {
+            console.log("click reported");
+            document.getElementById('newClaimPdfInput').click();
+        } else if (this.value === 'committedClaims') {
+            myModal.style.display = "block";
+        }
     });
 
     // Close the modal when the close button is clicked
@@ -40,10 +52,7 @@ document.addEventListener('DOMContentLoaded', function() {
         myModal.style.display = "none";
     });
 
-    // New Claim Button PDF upload
-    document.getElementById('newClaimBtn').addEventListener('click', function() {
-        document.getElementById('newClaimPdfInput').click();
-    });
+
 
     // Handler for file input change event
     document.getElementById('newClaimPdfInput').addEventListener('change', function(event) {

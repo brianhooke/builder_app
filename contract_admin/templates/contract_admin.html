@@ -12,20 +12,45 @@
 <p>65 Spitfire Place</p>
 
 <!-- Add this inside your HTML where you want the button -->
-<div>
+<!-- <div>
   <button id="commitCostsBtn" class="gradient-button">Commit Costs</button>
 </div>
 <input type="file" id="pdfInput" style="opacity: 0; position: absolute; left: -9999px;">
 
 <div>
   <button id="committedQuotesBtn" class="gradient-button">Committed Costs</button>
+</div> -->
+
+<div style="display: flex; justify-content: space-between;">
+  <div style="background: linear-gradient(45deg, #A090D0, #B3E1DD); width: 150px; padding: 10px; text-align: center; border-radius: 10px; margin-right: 10px;">
+    <select id="dropdown" style="width: 100%;">
+        <option selected disabled>Costs</option>
+        <option id="commitCostsBtn" value="commitCosts">Commit Costs</option>
+        <option id="committedQuotesBtn" value="committedQuotes">Existing Costs</option>
+    </select>
+  </div>
+  <input type="file" id="pdfInput" style="opacity: 0; position: absolute; left: -9999px;">
+
+  <div style="background: linear-gradient(45deg, #A090D0, #B3E1DD); width: 150px; padding: 10px; text-align: center; border-radius: 10px; margin-right: 10px;">
+    <select id="dropdown" style="width: 100%;">
+      <option selected disabled>Subbie Claims</option>
+      <option id="newClaimBtn" value="newClaim">Upload Claim</option>
+      <option id="committedClaimBtn" value="committedClaims">Existing Claims</option>
+    </select>
+  </div>
+  <input type="file" id="newClaimPdfInput" accept="application/pdf" style="display: none;" />
+
+  <div style="background: linear-gradient(45deg, #A090D0, #B3E1DD); width: 150px; padding: 10px; text-align: center; border-radius: 10px;">
+    <select id="hcDropdown" style="width: 100%;">
+      <option selected disabled>HC Claims</option>
+      <option id="hcMakeClaim" value="makeClaim">Create HC Claim</option>
+      <option id="hcClaims" value="hcClaims">Existing HC Claims</option>
+    </select>
+  </div>
 </div>
 
-<div>
-  <input type="file" id="pdfInput" accept="application/pdf" style="display: none;" />
-</div>
 
-<div>
+<!-- <div>
   <button id="newClaimBtn" class="gradient-button">Upload Claim</button>
 </div>
 <div>
@@ -34,15 +59,9 @@
 
 <div>
   <button id="committedClaimBtn" class="gradient-button">Committed Claims</button>
-</div>
+</div> -->
 
-<div>
-  <button id="hcMakeClaim" class="gradient-button">Make HC Claim</button>
-</div>
 
-<div>
-  <button id="hcClaims" class="gradient-button">HC Claims</button>
-</div>
 
 
 <div>
@@ -72,7 +91,7 @@
   </tbody>
 </table>
 
-<button id="uploadContactsButton">Upload Contacts</button>
+<!-- <button id="uploadContactsButton">Upload Contacts</button> -->
 
 <!-- <form id="upload-form" method="post" enctype="multipart/form-data">
   {% csrf_token %}
@@ -81,8 +100,6 @@
 
 <button id="uploadButton" class="gradient-button">Upload CSV</button>
 <input type="file" id="csvFile" accept=".csv" style="display: none;" /> -->
-
-
 
 <!-- Table to display Costing data -->
 <div style="overflow-x: visible;">
@@ -110,7 +127,7 @@
   </thead>
     <tbody>
       {% for costing in costings %}
-      <tr>
+      <tr style="height: 20px;">
         <td>{{ costing.category }}</td>
         <td>{{ costing.item }}</td>
         <td>{% if costing.contract_budget|floatformat:2 == "0.00" %}-{% else %}{{ costing.contract_budget|floatformat:2|intcomma }}{% endif %}</td>
@@ -194,6 +211,8 @@
   </div>
 </div>
 
+<!-- <input type="file" id="csvFileInput" style="display: none;">
+<button id="uploadContactsButton">Upload Contacts</button> -->
 
 {% endfor %}
 
@@ -206,281 +225,25 @@
 {{ hc_claim_lines_sums|json_script:"hc_claim_lines_sums" }}
 {{ hc_claimed|json_script:"hc_claimed" }}
 
-
-<input type="file" id="csvFileInput" style="display: none;">
-<button id="uploadContactsButton">Upload Contacts</button>
-
-<script>
-
-$(document).ready(function(){
-    $("#uploadContactsButton").click(function(){
-        $("#csvFileInput").click();
-    });
-
-    $("#csvFileInput").change(function(){
-        var formData = new FormData();
-        formData.append('file', $('#csvFileInput')[0].files[0]);
-
-        $.ajax({
-            url: '/upload_contacts/',
-            type: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken')
-            },
-            success: function(data, status) {
-                // Handle success
-            },
-            error: function(xhr, status, error) {
-                // Handle error
-            }
-        });
-    });
-});
-
-function getCookie(name) {
-    var cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        var cookies = document.cookie.split(';');
-        for (var i = 0; i < cookies.length; i++) {
-            var cookie = jQuery.trim(cookies[i]);
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
-
-  $(document).ready(function() {
-      $('#id_csv_file').on('change', function() {
-          var form = $('#upload-form')[0];
-          var formData = new FormData(form);
-          $.ajax({
-              url: '/contract_admin/upload_csv/',  // replace with your actual endpoint
-              type: 'POST',
-              data: formData,
-              processData: false,
-              contentType: false,
-              success: function(response) {
-                  alert('CSV file uploaded successfully');
-                  location.reload();
-              },
-              error: function(jqXHR, textStatus, errorThrown) {
-                alert(jqXHR.responseJSON.message);
-                location.reload();
-              }
-          });
-      });
-  });
-
-$(document).ready(function() {
-  $('#uploadButton').on('click', function() {
-      $('#csvFile').click();
-  });
-
-  $('#csvFile').on('change', function() {
-      var formData = new FormData();
-      formData.append('csv_file', this.files[0]);
-
-      $.ajax({
-          url: '/contract_admin/upload_categories/',
-          type: 'POST',
-          data: formData,
-          processData: false,
-          contentType: false,
-          success: function(response) {
-              alert('CSV file uploaded successfully');
-              location.reload();
-          },
-          error: function(jqXHR, textStatus, errorThrown) {
-              alert(jqXHR.responseJSON.message);
-              location.reload();
-          }
-      });
-  });
-});
-
-</script>
-
-
-<script> //send uncommitted costs to DB
-$('.save-costs').click(function() {
-    var costingId = $(this).data('id');  // Get the costing id from the data-id attribute
-    var newUncommittedValue = $('#uncommittedInput' + costingId).val();  // Get the new uncommitted value from the input field
-
-    // Send an AJAX request to the server
-    $.ajax({
-        url: '/contract_admin/update-costing/',
-        type: 'POST',
-        data: {
-            'costing_id': costingId,
-            'uncommitted': newUncommittedValue
-        },
-        success: function(response) {
-            // Close the modal
-            $('#editModal' + costingId).modal('hide');
-
-            // Refresh the page
-            location.reload();
-        }
-    });
-});
-</script>
+<script type="text/javascript">
+  // <!-- Fetch committed quotes from the context -->
+    var committedQuotes = JSON.parse('{{ committed_quotes|escapejs|safe }}');
+    var committed_allocations = JSON.parse('{{ committed_allocations|escapejs|safe }}');
+    var claim_allocations = JSON.parse('{{ claim_allocations|escapejs|safe }}');
+    var costings = JSON.parse(document.getElementById('costings').textContent);
+    var hc_claim_lines_sums = JSON.parse(document.getElementById('hc_claim_lines_sums').textContent);
+    var hc_claimed = JSON.parse(document.getElementById('hc_claimed').textContent);
+    var contacts = JSON.parse(document.getElementById('contacts').textContent);
+    // var costings = {{ costings|escapejs|safe }};
+  </script>
 
 <script src="{% static 'builder_app/commit_costs.js' %}"></script>
-
-<!-- Fetch committed quotes from the context -->
-<script type="text/javascript">
-  var committedQuotes = JSON.parse('{{ committed_quotes|escapejs|safe }}');
-  var committed_allocations = JSON.parse('{{ committed_allocations|escapejs|safe }}');
-  var claim_allocations = JSON.parse('{{ claim_allocations|escapejs|safe }}');
-  var costings = JSON.parse(document.getElementById('costings').textContent);
-  var hc_claim_lines_sums = JSON.parse(document.getElementById('hc_claim_lines_sums').textContent);
-  var hc_claimed = JSON.parse(document.getElementById('hc_claimed').textContent);
-  var contacts = JSON.parse(document.getElementById('contacts').textContent);
-  // var costings = {{ costings|escapejs|safe }};
-</script>
-
-<script>
-
-for (var item_id in hc_claim_lines_sums) {
-    var cell = document.getElementById("hc_claimed_" + item_id);
-    if (cell) {
-        var amount = parseFloat(hc_claim_lines_sums[item_id]);
-        cell.textContent = amount.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
-}
-
-// Create a new div element
-var newDiv = document.createElement("div");
-
-// Set the innerHTML of the div
-newDiv.innerHTML = `
-<div class="modal fade" id="committedQuotesModal" tabindex="-1" role="dialog" aria-labelledby="committedQuotesModalLabel" aria-hidden="true">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="committedQuotesModalLabel">Committed Quotes</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        <table id="committedQuotesTable" class="table">
-          <thead>
-            <tr>
-              <th>Quote #</th>
-              <th>Supplier</th>
-              <th>Total Cost</th>
-              <th rowspan="2" class="delete-cell-header delete-column">Delete</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- Table rows will be inserted here -->
-          </tbody>
-        </table>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-      </div>
-    </div>
-  </div>
-</div>`;
-// Append the new div to the body
-document.body.appendChild(newDiv);
-// Add event listener to the button
-document.getElementById('committedQuotesBtn').addEventListener('click', function() {
-    $('#committedQuotesModal').modal('show');
-});
-// Get the table body
-var tableBody = document.querySelector("#committedQuotesTable tbody");
-// Loop through each committed quote
-$(document).ready(function() {
-    $('.modal-footer .btn-secondary').on('click', function() {
-        location.reload();
-    });
-});
-
-committedQuotes.forEach(function(quote) {
-    // Format total_cost with thousands separator
-    var quote_id = quote.pk;
-    var totalCostFormatted = parseFloat(quote.fields.total_cost).toLocaleString();
-    var supplier = quote.fields.supplier;
-    // Create a new table row for each quote
-    var newRow = document.createElement("tr");
-    newRow.innerHTML = `<td><a href="#" class="quote-link">${quote.pk}</a></td><td>${supplier}</td><td>${totalCostFormatted}</td><td class="delete-column"><button class="btn btn-danger delete-btn">X</button></td>`;
-    // Append the table row to the table body
-    tableBody.appendChild(newRow);
-        // Add event listener to the delete button
-        newRow.children[3].children[0].addEventListener('click', function(event) {
-        event.preventDefault();
-        var confirmed = window.confirm('Are you sure you want to delete this quote?');
-        if (confirmed) {
-            // Send delete request to the server
-            fetch('contract_admin/delete_quote/', {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    id: quote.pk,
-                }),
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    // Remove the row from the table
-                    newRow.remove();
-                } else {
-                    window.alert('Failed to delete quote: ' + data.message);
-                }
-            })
-            .catch((error) => {
-                console.error('Error:', error);
-            });
-        }
-    });
-    // Add event listener to the 'Quote #' cell
-    newRow.children[0].addEventListener('click', function() {
-    // Get the quote data
-    var quote = committedQuotes.find(q => q.pk == this.textContent);
-    var allocations = committed_allocations.filter(a => a.fields.quote === quote.pk);
-    var totalCost = parseFloat(totalCostFormatted.replace(/,/g, ''));
-    // Open the modal
-    $('#committedQuotesModal').modal('hide');
-    // Pass the PDF data and supplier to the displayCombinedModal function
-    displayCombinedModal(quote.fields.pdf, quote_id, supplier, totalCost, allocations, true);
-    });
-});
-
-function populateModal(quoteNumber) {
-    console.log(committed_allocations);
-    // Retrieve the corresponding Committed_quotes and Committed_allocations data
-    var quote = committedQuotes.find(q => q.pk === quoteNumber);
-    var allocations = committed_allocations.filter(a => a.fields.quote === quoteNumber);
-    // Populate the modal fields with this data
-    document.getElementById('supplierInput').value = quote.fields.supplier;
-    document.getElementById('totalCostInput').value = quote.fields.total_cost;
-    allocations.forEach(function(allocation) {
-        addLineItem(allocation.fields.item, allocation.fields.amount);
-    });
-    // Open the modaly
-    $('#combinedModal').modal('show');
-}
-</script>
-
-
+<script src="{% static 'builder_app/committed_costs.js' %}"></script>
+<script src="{% static 'builder_app/contract_admin.js' %}"></script>
 <script src="{% static 'builder_app/metrics.js' %}"></script>
 <script src="{% static 'builder_app/claims.js' %}"></script>
 <script src="{% static 'builder_app/complete_on_site.js' %}"></script>
-<script src="{% static 'builder_app/hc_claim.js' %}"></script>
+<!-- <script src="{% static 'builder_app/hc_claim.js' %}"></script> -->
 <script src="{% static 'builder_app/contacts.js' %}"></script>
-
-
-
 
 {% endblock %}

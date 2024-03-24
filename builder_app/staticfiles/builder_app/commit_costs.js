@@ -1,8 +1,10 @@
 var itemsData = JSON.parse(document.getElementById('items-data').textContent);
 
 document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('commitCostsBtn').addEventListener('click', function() {
-        document.getElementById('pdfInput').click();
+    document.getElementById('dropdown').addEventListener('change', function() {
+        if (this.value === 'commitCosts') {
+            document.getElementById('pdfInput').click();
+        }
     });
     // Handler for file input change event
     document.getElementById('pdfInput').addEventListener('change', function(event) {
@@ -20,42 +22,42 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function updateHiddenInput(selectElement) {
     var selectedOption = selectElement.options[selectElement.selectedIndex];
-    document.getElementById('supplierId').value = selectedOption.value;
+    document.getElementById('contact_pk').value = selectedOption.value;
 }
 
-function displayCombinedModal(pdfFilename, quote_id, supplier, totalCost, allocations, updating = false) {
+function displayCombinedModal(pdfFilename, quote_id, supplier, contact_pk, totalCost, allocations, updating = false) {
     var pdfUrl;
     if (arguments.length === 1) {
         // If only one argument is passed, it's pdfData
         pdfUrl = pdfFilename;  // In this case, pdfFilename is actually pdfData
         quote_id=""
         supplier = "";
+        contact_pk = "";
         totalCost = 0.00;
         allocations = [];
     } else {
         // If four arguments are passed, it's pdfFilename, supplier, totalCost, allocations
-        pdfUrl = '/media/' + pdfFilename.replace('pdfs/', '');
+        pdfUrl = '/media/' + pdfFilename;
     }
     // Generate options for the supplier dropdown list
-    console.log("here are contacts");  // Log the pdfUrl variable
-    console.log(contacts);  // Log the contacts variable
     var selectableContacts = contacts.filter(function(contact) {
         return contact.contact_selectable === true;
     });
-    console.log("here are selectable contacts");  // Log the pdfUrl variable
-    console.log(selectableContacts);  // Log the selectableContacts variable
     var options = selectableContacts.map(function(contact) {
-        return `<option value="${contact.contact_id}">${contact.contact_name}</option>`;
+        if (contact.contact_name === supplier) {
+            return `<option value="${contact.contact_pk}" selected>${contact.contact_name}</option>`;
+        } else {
+            return `<option value="${contact.contact_pk}">${contact.contact_name}</option>`;
+        }
     }).join('');
-    console.log(options);  // Log the options variable
+    console.log("quote_id: "+quote_id);  // Log the options variable
 
     var selectHTML = `
     <select id="supplier" onchange="updateHiddenInput(this)">
         ${options}
     </select>
-    <input type="hidden" id="supplierId" name="supplierId">
+    <input type="hidden" id="contact_pk" name="contact_pk">
     `;
-
 
     var combinedModalHTML = `
         <div id="combinedModal" style="display: flex;">
@@ -76,10 +78,11 @@ function displayCombinedModal(pdfFilename, quote_id, supplier, totalCost, alloca
             <table id="lineItemsTable" style="table-layout: fixed;">
             <thead>
                 <tr>
-                    <th rowspan="2" style="width: 22%;">Item</th>
-                    <th colspan="2" style="width: 26%;">Uncommitted</th>
-                    <th colspan="2" style="width: 26%;">Committed</th>
-                    <th rowspan="2" style="width: 21%;">Total</th>
+                    <th rowspan="2" style="width: 17%;">Item</th>
+                    <th colspan="2" style="width: 21%;">Uncommitted</th>
+                    <th colspan="2" style="width: 21%;">Committed</th>
+                    <th rowspan="2" style="width: 16%;">Total</th>
+                    <th rowspan="2" style="width: 20%;">Notes</th>
                     <th rowspan="2" class="delete-cell-header" style="width: 5%;"></th>
                 </tr>
                 <tr>
@@ -94,6 +97,7 @@ function displayCombinedModal(pdfFilename, quote_id, supplier, totalCost, alloca
                 <tr id="stillToAllocateRow">
                     <td colspan="5">Still to Allocate</td>
                     <td id="stillToAllocateValue">0.00</td>
+                    <td id="notes"></td>
                 </tr>
             </tbody>
         </table>
@@ -108,6 +112,8 @@ function displayCombinedModal(pdfFilename, quote_id, supplier, totalCost, alloca
     var modalDiv = document.createElement('div');
     modalDiv.innerHTML = combinedModalHTML;
     document.body.appendChild(modalDiv);
+    // Set the default value of the hidden input field
+    document.getElementById('contact_pk').value = contact_pk;
     // Add event listener to the 'add row' button
     document.getElementById('addRowButton').addEventListener('click', function() {
         addLineItem();
@@ -115,7 +121,7 @@ function displayCombinedModal(pdfFilename, quote_id, supplier, totalCost, alloca
     });
     // For each allocation, add a row to the table
     allocations.forEach(function(allocation) {
-        addLineItem(allocation.fields.item, allocation.fields.amount);
+        addLineItem(allocation.fields.item, allocation.fields.amount, allocation.fields.notes);
     });
     // Set the default value of the 'total cost' input to 0.00
     var totalCostInput = document.getElementById('totalCost');
@@ -129,13 +135,11 @@ function displayCombinedModal(pdfFilename, quote_id, supplier, totalCost, alloca
     document.getElementById('pdfInput').value = '';
 });
 
-
-
 function gatherData() {
     var totalCost = parseFloat(document.getElementById('totalCost').value);
     totalCost = isNaN(totalCost) ? 0 : totalCost;
     var allocated = 0;
-    var supplier = document.getElementById('supplier').value;
+    var contact_pk = document.getElementById('contact_pk').value;
     var tableBody = document.getElementById('lineItemsTable').tBodies[0];
     for (var i = 0; i < tableBody.rows.length - 1; i++) {
         var cellValue = parseFloat(tableBody.rows[i].cells[4].firstChild.value.replace(/,/g, ''));
@@ -146,7 +150,7 @@ function gatherData() {
         alert('Total Cost does not equal Total Allocated');
         return null;
     }
-    if (supplier === '') {
+    if (contact_pk === '') {
         alert('Need to input Supplier Name');
         return null;
     }
@@ -157,11 +161,15 @@ function gatherData() {
             var amountInput = row.cells[4].querySelector('input');
             var amount = amountInput ? amountInput.value : '';
             var uncommittedInput = row.cells[2].querySelector('input');
-            var uncommitted = uncommittedInput ? uncommittedInput.value : '';            
+            var uncommitted = uncommittedInput ? uncommittedInput.value : '';
+            var notesInput = row.cells[6].querySelector('input');
+            var notes = notesInput ? notesInput.value : '';
+            console.log("notes being uploaded is: ", notes);
             return {
                 item: selectElement.value,
                 amount: amount,
-                uncommitted: uncommitted // Include the uncommitted value in the allocation
+                uncommitted: uncommitted, // Include the uncommitted value in the allocation
+                notes: notes // Include the notes value in the allocation
             };
         } else {
             return null;
@@ -171,7 +179,7 @@ function gatherData() {
     });
     var data = {
         total_cost: totalCost,
-        supplier: supplier,
+        contact_pk: contact_pk,
         allocations: allocations
     };
     if (quote_id) {
@@ -182,7 +190,7 @@ function gatherData() {
 
 document.getElementById('commitBtn').addEventListener('click', function() {
     var data = gatherData();
-    console.log(data)
+    // console.log(data)
     if (!data) return;
     data.pdf = document.querySelector('.pdf-frame').src;
     fetch('/contract_admin/commit_data/', {
@@ -194,7 +202,7 @@ document.getElementById('commitBtn').addEventListener('click', function() {
         body: JSON.stringify(data)
     }).then(function(response) {
         if (response.ok) {
-            alert('Costs uploaded successfully.');
+            alert('Costs uploaded successfully');
             location.reload();
         } else {
             alert('An error occurred.');
@@ -204,7 +212,8 @@ document.getElementById('commitBtn').addEventListener('click', function() {
 
 document.getElementById('updateBtn').addEventListener('click', function() {
     var data = gatherData(quote_id);  // Pass quote_id here
-    console.log(data)
+    console.log(data);
+    // console.log(data)
     if (!data) return;
     fetch('/contract_admin/update_quote/', {
         method: 'POST',
@@ -215,21 +224,18 @@ document.getElementById('updateBtn').addEventListener('click', function() {
         body: JSON.stringify(data)
     }).then(function(response) {
         if (response.ok) {
-            alert('Costs updated successfully.');
+            alert('Costs uploaded successfully');
             location.reload();
         } else {
             alert('An error occurred.');
         }
     });
 });
-
 }
 
-function addLineItem(item, amount) {
-    // Get the table body element, create a new row and add cells to it
+function addLineItem(item, amount, notes = '') {
     var tableBody = document.getElementById('lineItemsTable').tBodies[0];
     var newRow = document.createElement('tr');
-    // Create a dropdown list for the first cell
     var select = document.createElement('select');
     select.style.maxWidth = "100%";
     select.innerHTML = '<option value="">Select an item</option>';  // Default option
@@ -239,7 +245,7 @@ function addLineItem(item, amount) {
     var firstCell = newRow.insertCell(0);
     firstCell.appendChild(select);
     // Create the remaining cells
-    for (var i = 1; i < 7; i++) {
+    for (var i = 1; i < 8; i++) {
         var newCell = newRow.insertCell(i);
         if (i === 2 || i === 4) {
             var input = document.createElement('input');
@@ -249,12 +255,20 @@ function addLineItem(item, amount) {
             newCell.appendChild(input);
             // Add an event listener to the input field
             input.addEventListener('input', updateStillToAllocateValue);
+        } else if (i === 6) {
+            var input = document.createElement('input');
+            input.type = 'text';
+            input.style.width = '100%';
+            newCell.appendChild(input);
+            if (notes) {
+                input.value = notes;
+            }
         } else {
             newCell.innerHTML = '0';  // Default to 0
         }
     }
     // Create a cell for the delete button
-    var deleteCell = newRow.insertCell(6);
+    var deleteCell = newRow.insertCell(8);
     deleteCell.className = 'delete-cell';  // Add a CSS class to the cell
     var deleteButton = document.createElement('button');
     deleteButton.textContent = 'x';
@@ -285,6 +299,9 @@ function addLineItem(item, amount) {
     // Set the input elements' values to the amount
     if (amount) {
         newRow.cells[4].children[0].value = amount;
+    }
+    if (notes) {
+        newRow.cells[6].children[0].value = notes;
     }
     // Add an event listener to the select element
     select.addEventListener('change', function() {

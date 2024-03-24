@@ -14,7 +14,7 @@ class Committed_quotesAdmin(admin.ModelAdmin):
     list_display = ("quote", "total_cost", "pdf", "contact_pk")
 
 class Committed_allocationsAdmin(admin.ModelAdmin):
-    list_display = ("quote", "item", "amount", "description")
+    list_display = ("quote", "item", "amount", "notes")
 
 class ClaimsAdmin(admin.ModelAdmin):
     list_display = ("claim", "total", "pdf")
