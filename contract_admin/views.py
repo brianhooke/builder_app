@@ -67,8 +67,18 @@ def contract_admin(request):
     items = [{'item': costing['item'], 'uncommitted': costing['uncommitted'], 'committed': costing['committed']} for costing in costings]
     # Retrieve all Committed_quotes and Committed_allocations objects
     committed_quotes = Committed_quotes.objects.all().values('quote', 'total_cost', 'pdf', 'contact_pk', 'contact_pk__contact_name')
-    logger.info(committed_quotes)
-    committed_quotes_json = json.dumps(list(committed_quotes), default=str)
+    # Convert the queryset to a list of dictionaries
+    committed_quotes_list = list(committed_quotes)
+    # Replace the pdf path with the full URL for each quote
+    # Replace the pdf path with the full URL for each quote
+    for quote in committed_quotes_list:
+        if settings.DEBUG:
+            # If in development, use the request to build the URL
+            quote['pdf'] = request.build_absolute_uri(quote['pdf'])
+        else:
+            # If in production, prepend the MEDIA_URL to the relative path
+            quote['pdf'] = settings.MEDIA_URL + quote['pdf']   
+    committed_quotes_json = json.dumps(committed_quotes_list, default=str)
     committed_allocations_json = serializers.serialize('json', committed_allocations)
     # Retrieve all Claims and Claim_allocations objects
     claims = Claims.objects.all()

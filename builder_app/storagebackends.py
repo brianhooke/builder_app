@@ -10,6 +10,6 @@ class StaticStorage(S3Boto3Storage):
     default_acl = 'public-read'
 
 class PublicMediaStorage(S3Boto3Storage):
-    location = 'media' #ie builderappbucket/media is the location we upload to.
+    location = '' #ie builderappbucket/media is the location we upload to.
     default_acl = 'public-read'
     file_overwrite = False

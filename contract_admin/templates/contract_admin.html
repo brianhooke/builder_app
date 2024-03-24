@@ -2,6 +2,7 @@
 
 {% load humanize %}
 {% load static %}
+{% load i18n %}
 
 {% block title %}
   Contract Admin
@@ -214,6 +215,7 @@
 <!-- <input type="file" id="csvFileInput" style="display: none;">
 <button id="uploadContactsButton">Upload Contacts</button> -->
 
+
 {% endfor %}
 
 {{ totals|json_script:"totals-data" }}
@@ -224,6 +226,9 @@
 {{ contacts|json_script:"contacts" }}
 {{ hc_claim_lines_sums|json_script:"hc_claim_lines_sums" }}
 {{ hc_claimed|json_script:"hc_claimed" }}
+
+
+
 
 <script type="text/javascript">
   // <!-- Fetch committed quotes from the context -->
@@ -245,5 +250,27 @@
 <script src="{% static 'builder_app/complete_on_site.js' %}"></script>
 <!-- <script src="{% static 'builder_app/hc_claim.js' %}"></script> -->
 <script src="{% static 'builder_app/contacts.js' %}"></script>
+
+<div id="pdf-container">
+  <!-- The PDF will be displayed here -->
+</div>
+
+<script>
+  // Get the first quote
+  var firstQuote = committedQuotes[0];
+
+  // Get the PDF URL
+  var pdfUrl = firstQuote.pdf;
+
+  // Create an iframe to display the PDF
+  var iframe = document.createElement('iframe');
+  iframe.src = pdfUrl;
+  iframe.width = '100%';
+  iframe.height = '500px';
+
+  // Append the iframe to the PDF container
+  var pdfContainer = document.getElementById('pdf-container');
+  pdfContainer.appendChild(iframe);
+</script>
 
 {% endblock %}
